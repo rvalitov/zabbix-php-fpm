@@ -25,6 +25,7 @@ pm.max_spare_servers = <tmpl_var name='pm_max_spare_servers'>
 pm.process_idle_timeout = <tmpl_var name='pm_process_idle_timeout'>s;
 </tmpl_if>
 pm.max_requests = <tmpl_var name='pm_max_requests'>
+pm.status_path = /php-fpm-status
 
 chdir = /
 <tmpl_if name='php_fpm_chroot'>
