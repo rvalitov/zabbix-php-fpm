@@ -1,0 +1,18 @@
+# Windows thumbnail db
+Thumbs.db
+
+# OSX files
+.DS_Store
+
+#log files
+*.log
+
+#bak files
+~*
+*.bak
+
+#temp files
+*.tmp
+
+#PhpStorm
+.idea/
