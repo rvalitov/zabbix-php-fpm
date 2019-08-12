@@ -16,3 +16,6 @@ Thumbs.db
 
 #PhpStorm
 .idea/
+
+#Visual Studio
+.vs/
