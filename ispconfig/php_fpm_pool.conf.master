@@ -1,0 +1,53 @@
+[<tmpl_var name='fpm_pool'>]
+
+<tmpl_if name='use_tcp'>
+listen = 127.0.0.1:<tmpl_var name='fpm_port'>
+listen.allowed_clients = 127.0.0.1
+</tmpl_if>
+<tmpl_if name='use_socket'>
+listen = <tmpl_var name='fpm_socket'>
+listen.owner = <tmpl_var name='fpm_listen_user'>
+listen.group = <tmpl_var name='fpm_listen_group'>
+listen.mode = <tmpl_var name='fpm_listen_mode'>
+</tmpl_if>
+
+user = <tmpl_var name='fpm_user'>
+group = <tmpl_var name='fpm_group'>
+
+pm = <tmpl_var name='pm'>
+pm.max_children = <tmpl_var name='pm_max_children'>
+<tmpl_if name='pm' op='==' value='dynamic'>
+pm.start_servers = <tmpl_var name='pm_start_servers'>
+pm.min_spare_servers = <tmpl_var name='pm_min_spare_servers'>
+pm.max_spare_servers = <tmpl_var name='pm_max_spare_servers'>
+</tmpl_if>
+<tmpl_if name='pm' op='==' value='ondemand'>
+pm.process_idle_timeout = <tmpl_var name='pm_process_idle_timeout'>s;
+</tmpl_if>
+pm.max_requests = <tmpl_var name='pm_max_requests'>
+
+chdir = /
+<tmpl_if name='php_fpm_chroot'>
+chroot = <tmpl_var name='php_fpm_chroot_dir'>
+php_admin_value[doc_root] = <tmpl_var name='php_fpm_chroot_web_folder'>
+php_admin_value[cgi.fix_pathinfo] = 0
+</tmpl_if>
+
+env[HOSTNAME] = $HOSTNAME
+env[TMP] = <tmpl_var name='document_root'>/tmp
+env[TMPDIR] = <tmpl_var name='document_root'>/tmp
+env[TEMP] = <tmpl_var name='document_root'>/tmp
+env[PATH] = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+<tmpl_if name='security_level' op='==' value='20'>
+<tmpl_var name='enable_php_open_basedir'>php_admin_value[open_basedir] = <tmpl_var name='php_open_basedir'>
+<tmpl_if name='custom_session_save_path' op='!=' value='y'>
+php_admin_value[session.save_path] = <tmpl_var name='document_root'>/tmp
+</tmpl_if>
+php_admin_value[upload_tmp_dir] = <tmpl_var name='document_root'>/tmp
+php_admin_value[sendmail_path] = "/usr/sbin/sendmail -t -i -f webmaster@<tmpl_var name='domain'>"
+</tmpl_if>
+
+<tmpl_loop name="custom_php_ini_settings">
+<tmpl_var name='ini_setting'>
+</tmpl_loop>
