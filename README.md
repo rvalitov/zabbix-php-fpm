@@ -244,6 +244,53 @@ If you use a custom status path, then configure it in the macros section of the 
 
 The setup is finished, just wait a couple of minutes till Zabbix discovers all your pools and captures the data.
 
+# Testing and Troubleshooting
+## Check autodiscovery
+First test that autodiscovery of PHP-FPM pools works on your machine. Run the following command:
+
+```console
+bash /etc/zabbix/zabbix_php_fpm_discovery.sh
+```
+
+The output should be a valid JSON with a list of pools and their sockets, something like below:
+
+```json
+{
+   "data":[
+      {
+         "{#POOLNAME}":"web1",
+         "{#POOLSOCKET}":"/var/lib/php7.3-fpm/web1.sock"
+      },
+      {
+         "{#POOLNAME}":"web4",
+         "{#POOLSOCKET}":"/var/lib/php7.3-fpm/web4.sock"
+      },
+      {
+         "{#POOLNAME}":"www",
+         "{#POOLSOCKET}":"/run/php/php7.3-fpm.sock"
+      }
+   ]
+}
+```
+
+If this script does not display the list, then it will show you the list of utilities that are missing on your system and must be installed. We require the following utilities to be installed:
+
+- awk
+- ps
+- grep
+- sort
+- head
+- lsof
+- jq
+
+If some pools are missing, then check that they do really exist and are running, for example, using command:
+
+```console
+ps aux | grep "php-fpm"
+```
+
+In the list you should see your pool. If it's not there, then it means it's not running (not functional).
+
 # Compatibility
 Tested with:
 - PHP 7.3
