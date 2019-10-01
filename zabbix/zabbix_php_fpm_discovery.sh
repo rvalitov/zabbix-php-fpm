@@ -45,13 +45,13 @@ POOL_FIRST=0
 echo -n "{\"data\":["
 while IFS= read -r line
 do
-    if [[ $POOL_FIRST == 1 ]]; then
-        echo -n ","
-    fi
     POOL_PID=`printf '%s\n' "${PS_LIST[@]}" | $S_GREP "php-fpm: pool $line" | $S_HEAD -1 | $S_AWK '{print $1}'`
     if [[ ! -z $POOL_PID ]]; then
         POOL_SOCKET=`$S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP unix | $S_HEAD -1 | $S_AWK '{ print $(NF-1)}'`
         if [[ ! -z $POOL_SOCKET ]]; then
+            if [[ $POOL_FIRST == 1 ]]; then
+                echo -n ","
+            fi
             echo -n "{\"{#POOLNAME}\":"
             echo -n "$line" | $S_JQ -aR .
             echo -n ",\"{#POOLSOCKET}\":"
