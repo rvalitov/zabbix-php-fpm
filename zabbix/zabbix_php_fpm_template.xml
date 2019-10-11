@@ -1331,7 +1331,7 @@
                             <type>0</type>
                             <snmp_community/>
                             <snmp_oid/>
-                            <key>proc.mem[&quot;php-fpm: pool {#POOLNAME}&quot;,,,,vsize]</key>
+                            <key>proc.mem[&quot;php-fpm: pool {#POOLNAME}&quot;,,,,rss]</key>
                             <delay>1m</delay>
                             <history>1d</history>
                             <trends>365d</trends>
@@ -1657,7 +1657,7 @@
                                     <type>0</type>
                                     <item>
                                         <host>Template App PHP-FPM</host>
-                                        <key>proc.mem[&quot;php-fpm: pool {#POOLNAME}&quot;,,,,vsize]</key>
+                                        <key>proc.mem[&quot;php-fpm: pool {#POOLNAME}&quot;,,,,rss]</key>
                                     </item>
                                 </graph_item>
                                 <graph_item>
