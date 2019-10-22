@@ -1,6 +1,6 @@
 # PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools
 
-![Zabbix version logo](https://img.shields.io/badge/Zabbix-v4.x+-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.6.x+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
+![Zabbix version logo](https://img.shields.io/badge/Zabbix-v4.2+-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.6.x+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
 
 ![Banner](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/repository-open-graph-template.png)
 
@@ -297,4 +297,5 @@ Tested with:
 - Zabbix 4.2.5
 - ISPConfig v.3.1.14p2
 
-Should work with PHP 5.6.x and later, Zabbix 4.x. Not tested with Zabbix 3.x and earlier: if it works, please let me know. 
+Should work with PHP 5.6.x and later, Zabbix 4.2.x and later. Currently the template does not work with Zabbix 4.0.x, see [issue](https://github.com/rvalitov/zabbix-php-fpm/issues/5).
+ Not tested with other versions of Zabbix: if it works, please let me know. 
