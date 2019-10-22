@@ -113,21 +113,21 @@ apt-get -y install grep gawk lsof jq libfcgi0ldbl
 Download the latest version of the template:
 
 ```console
-wget https://github.com/rvalitov/zabbix-php-fpm/archive/master.zip /tmp/zabbix-php-fpm.zip
+wget https://github.com/rvalitov/zabbix-php-fpm/archive/master.zip -O /tmp/zabbix-php-fpm.zip
 ``` 
 
 Unzip the archive:
 
 ```console
-unzip /tmp/zabbix-php-fpm.zip
+unzip /tmp/zabbix-php-fpm.zip -d /tmp
 ```
 
 Copy the required files to the Zabbix agent configuration directory:
 
 ```console
-cp /tmp/zabbix-php-fpm/zabbix/userparameter_php_fpm.conf /etc/zabbix/zabbix_agentd.conf/
-cp /tmp/zabbix-php-fpm/zabbix/zabbix_php_fpm_discovery.sh /etc/zabbix/
-cp /tmp/zabbix-php-fpm/zabbix/zabbix_php_fpm_status.sh /etc/zabbix/
+cp /tmp/zabbix-php-fpm-master/zabbix/userparameter_php_fpm.conf /etc/zabbix/zabbix_agentd.d/
+cp /tmp/zabbix-php-fpm-master/zabbix/zabbix_php_fpm_discovery.sh /etc/zabbix/
+cp /tmp/zabbix-php-fpm-master/zabbix/zabbix_php_fpm_status.sh /etc/zabbix/
 ```
 
 Configure access rights:
@@ -224,7 +224,7 @@ Delete temporary files:
 
 ```console
 rm /tmp/zabbix-php-fpm.zip
-rm -rf /tmp/zabbix-php-fpm/
+rm -rf /tmp/zabbix-php-fpm-master/
 ```
 
 ### 2. On Zabbix Server
