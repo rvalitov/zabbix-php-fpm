@@ -260,6 +260,7 @@ First test that autodiscovery of PHP-FPM pools works on your machine. Run the fo
 ```console
 bash /etc/zabbix/zabbix_php_fpm_discovery.sh
 ```
+**Important:** please make sure that you use `bash` in the command above, not `sh` or other alternatives, otherwise you may get a script syntax error message.
 
 The output should be a valid JSON with a list of pools and their sockets, something like below:
 
