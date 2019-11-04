@@ -2,13 +2,13 @@
 #Ramil Valitov ramilvalitov@gmail.com
 #https://github.com/rvalitov/zabbix-php-fpm
 
-S_PS=`which --skip-alias ps`
-S_GREP=`which --skip-alias grep`
-S_AWK=`which --skip-alias awk`
-S_SORT=`which --skip-alias sort`
-S_HEAD=`which --skip-alias head`
-S_LSOF=`which --skip-alias lsof`
-S_JQ=`which --skip-alias jq`
+S_PS=`type -P ps`
+S_GREP=`type -P grep`
+S_AWK=`type -P awk`
+S_SORT=`type -P sort`
+S_HEAD=`type -P head`
+S_LSOF=`type -P lsof`
+S_JQ=`type -P jq`
 
 if [[ ! -f $S_PS ]]; then
 	echo "Utility 'ps' not found. Please, install it first."
