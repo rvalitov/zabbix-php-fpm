@@ -102,11 +102,20 @@ Displays the following data:
 Perform the following operations on all servers with Zabbix and PHP-FPM from which you want to capture the data.
 
 #### 1.1. Install Prerequisites
-Install required packages:
+Install required packages.
+
+For `apt-get` based environments (Debian, Ubuntu, etc.):
 
 ```bash
 apt-get update
 apt-get -y install grep gawk lsof jq libfcgi0ldbl
+```
+
+For `yum` based environments (CentOS):
+
+```bash
+yum check-update
+yum install grep gawk lsof jq fcgi
 ```
 
 #### 1.2. Install Zabbix PHP-FPM template
