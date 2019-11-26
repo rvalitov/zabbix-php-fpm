@@ -28,7 +28,6 @@ fi
 
 POOL_URL=$1
 POOL_PATH=$2
-echo "$POOL_URL $POOL_PATH" > /tmp/test.txt
 #connecting to socket or address, https://easyengine.io/tutorials/php/directly-connect-php-fpm/	
 PHP_STATUS=`SCRIPT_NAME=$POOL_PATH \
 SCRIPT_FILENAME=$POOL_PATH \
