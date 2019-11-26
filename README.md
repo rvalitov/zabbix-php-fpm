@@ -104,14 +104,25 @@ Perform the following operations on all servers with Zabbix and PHP-FPM from whi
 #### 1.1. Install Prerequisites
 Install required packages.
 
-For `apt-get` based environments (Debian, Ubuntu, etc.):
+##### For `apt-get` based environments (Debian, Ubuntu, etc.):
 
 ```bash
 apt-get update
 apt-get -y install grep gawk lsof jq libfcgi0ldbl
 ```
+Additionally, for Debian Jessie 8.x and earlier (or for equivalent Ubuntu version):
 
-For `yum` based environments (CentOS):
+```bash
+apt-get -y install libfcgi0ldbl
+```
+
+Additionally, for Debian Stretch 9.x and later (or for equivalent Ubuntu version):
+
+```bash
+apt-get -y install libfcgi-bin
+```
+
+##### For `yum` based environments (CentOS):
 
 ```bash
 yum check-update
