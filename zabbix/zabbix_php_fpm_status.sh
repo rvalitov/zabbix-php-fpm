@@ -2,8 +2,8 @@
 #Ramil Valitov ramilvalitov@gmail.com
 #https://github.com/rvalitov/zabbix-php-fpm
 
-S_FCGI=`which cgi-fcgi`
-S_GREP=`which grep`
+S_FCGI=`type -P cgi-fcgi`
+S_GREP=`type -P grep`
 
 if [[ ! -f $S_FCGI ]]; then
 	echo "Utility 'cgi-fcgi' not found. Please, install it first."
