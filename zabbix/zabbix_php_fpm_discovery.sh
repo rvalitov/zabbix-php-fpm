@@ -47,7 +47,7 @@ while IFS= read -r line
 do
     POOL_PID=`printf '%s\n' "${PS_LIST[@]}" | $S_GREP "php-fpm: pool $line" | $S_HEAD -1 | $S_AWK '{print $1}'`
     if [[ ! -z $POOL_PID ]]; then
-        POOL_SOCKET=`$S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP unix | $S_HEAD -1 | $S_AWK '{ print $(NF-1)}'`
+        POOL_SOCKET=`$S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP unix | $S_HEAD -1 | $S_AWK '{ print $(NF)}'`
         if [[ ! -z $POOL_SOCKET ]]; then
             if [[ $POOL_FIRST == 1 ]]; then
                 echo -n ","
