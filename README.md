@@ -301,6 +301,13 @@ ps aux | grep "php-fpm"
 
 In the list you should see your pool. If it's not there, then it means it's not running (not functional).
 
+## How to troubleshoot template import failure
+To view the import errors, please click the "Details" section in the Zabbix GUI. It should be on the same import page near the error message:
+
+![Zabbix template import error details](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/zabbix-import-error.jpg)
+
+Then check the Zabbix server log, for Debian/Ubuntu it's located at `/var/log/zabbix/zabbix_server.log`.
+
 # Compatibility
 Tested with:
 - PHP 7.3
