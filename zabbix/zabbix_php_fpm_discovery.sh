@@ -47,7 +47,12 @@ while IFS= read -r line
 do
     POOL_PID=`printf '%s\n' "${PS_LIST[@]}" | $S_GREP "php-fpm: pool $line" | $S_HEAD -1 | $S_AWK '{print $1}'`
     if [[ ! -z $POOL_PID ]]; then
-        POOL_SOCKET=`$S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP unix | $S_HEAD -1 | $S_AWK '{ print $(NF-1)}'`
+        #We search for socket or IP address and port
+        #Socket example:
+        #php-fpm7. 25897 root 9u unix 0x000000006509e31f 0t0 58381847 /run/php/php7.3-fpm.sock type=STREAM
+        #IP example:
+        #php-fpm7. 1110 defualt 0u IPv4 15760 0t0 TCP localhost:8002 (LISTEN)
+        POOL_SOCKET=`$S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP -e unix -e TCP | $S_HEAD -1 | $S_AWK '{ print $(NF-1)}'`
         if [[ ! -z $POOL_SOCKET ]]; then
             if [[ $POOL_FIRST == 1 ]]; then
                 echo -n ","
