@@ -277,7 +277,7 @@ The output should be a valid JSON with a list of pools and their sockets, someth
       },
       {
          "{#POOLNAME}":"www",
-         "{#POOLSOCKET}":"/run/php/php7.3-fpm.sock"
+         "{#POOLSOCKET}":"127.0.0.1:9000"
       }
    ]
 }
