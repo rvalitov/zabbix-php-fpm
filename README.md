@@ -157,8 +157,13 @@ chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
 chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 ```
 
-#### 1.3. Allow root for Zabbix Agent
-Automatic detection of sockets used by pools requires root previliges. Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `AllowRoot` option and enable it:
+#### 1.3. Root previliges
+Automatic detection of pools requires root previliges. You can achieve it using one of the methods below.
+
+##### 1.3.1 Root previliges for Zabbix Agent
+This method sets root previliges for Zabbix Agent, i.e. the Zabbix Agent will run under `root` user, as a result all user scripts will also have the root access rights. 
+
+Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `AllowRoot` option and enable it:
 
 ```
 ### Option: AllowRoot
@@ -172,7 +177,28 @@ Automatic detection of sockets used by pools requires root previliges. Edit Zabb
 # Default:
 # AllowRoot=0
 AllowRoot=1
-```  
+```
+
+##### 1.3.2 Grant previliges to the PHP-FPM autodiscovery script only
+If you don't want to run Zabbix Agent as root, then you can configure the previliges only to our script. In this case you need to have `sudo` installed:
+
+```console
+apt-get install sudo
+```
+
+Now edit the `/etc/sudoers` file by running command:
+
+```console
+visudo
+```
+
+Add the following line to this file:
+
+```
+zabbix ALL = NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh
+```
+
+Here we specified `zabbix` as the user under which the Zabbix Agent is run. This is the default name, but if you have a custom installation with different name, then please, change it accordingly. Save and exit the editor. Your modifications will be applied. 
 
 #### 1.4. Linux Tuning (optional)
 Usually PHP-FPM [backlog option](https://www.php.net/manual/en/install.fpm.configuration.php#listen-backlog) is limited by Linux kernel settings and equals to `128` by default.
