@@ -345,6 +345,22 @@ To view the import errors, please click the "Details" section in the Zabbix GUI.
 
 Then check the Zabbix server log, for Debian/Ubuntu it's located at `/var/log/zabbix/zabbix_server.log`.
 
+## Test with `zabbix_get`
+Please, use the [`zabbix_get`](https://www.zabbix.com/documentation/4.4/manual/concepts/get) utility from your Zabbix Server to test that you can get the data from the Zabbix Agent (host):
+
+```console
+zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover
+zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover.status[POOL_URL,POOL_PATH]
+``` 
+In the above example we use the following values:
+
+- `127.0.0.1` is the IP address of the host where the Zabbix Agent is installed and where the PHP-FPM is running
+- `10050` is the port of the Zabbix Agent
+- `POOL_URL` is the socket of the pool or IP and port combination, example: `/var/lib/php7.3-fpm/web1.sock` or `127.0.0.1:9000`
+- `POOL_PATH` is the status path of PHP-FPM that you set in [`pm.status_path`](https://github.com/rvalitov/zabbix-php-fpm#16-adjust-php-fpm-pools-configuration), the default value is `/php-fpm-status`.
+
+The commands above should return valid JSON data. If any error happens then it will be displayed. 
+
 # Compatibility
 Tested with:
 - PHP 7.3
