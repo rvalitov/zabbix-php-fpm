@@ -45,7 +45,7 @@ POOL_FIRST=0
 echo -n "{\"data\":["
 while IFS= read -r line
 do
-    POOL_PID=`printf '%s\n' "${PS_LIST[@]}" | $S_GREP "php-fpm: pool $line" | $S_HEAD -1 | $S_AWK '{print $1}'`
+    POOL_PID=`printf '%s\n' "${PS_LIST[@]}" | $S_GREP "php-fpm: pool $line$" | $S_HEAD -1 | $S_AWK '{print $1}'`
     if [[ ! -z $POOL_PID ]]; then
         #We search for socket or IP address and port
         #Socket example:
