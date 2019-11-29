@@ -198,7 +198,21 @@ Add the following line to this file:
 zabbix ALL = NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh
 ```
 
-Here we specified `zabbix` as the user under which the Zabbix Agent is run. This is the default name, but if you have a custom installation with different name, then please, change it accordingly. Save and exit the editor. Your modifications will be applied. 
+Here we specified `zabbix` as the user under which the Zabbix Agent is run. This is the default name, but if you have a custom installation with different name, then please, change it accordingly. Save and exit the editor. Your modifications will be applied.
+
+Now edit the file `userparameter_php_fpm.conf`. Find the line:
+
+```
+UserParameter=php-fpm.discover,/etc/zabbix/zabbix_php_fpm_discovery.sh
+```
+
+Add `sudo` there, so the line should be:
+
+```
+UserParameter=php-fpm.discover,sudo /etc/zabbix/zabbix_php_fpm_discovery.sh
+```
+
+That's all. 
 
 #### 1.4. Linux Tuning (optional)
 Usually PHP-FPM [backlog option](https://www.php.net/manual/en/install.fpm.configuration.php#listen-backlog) is limited by Linux kernel settings and equals to `128` by default.
