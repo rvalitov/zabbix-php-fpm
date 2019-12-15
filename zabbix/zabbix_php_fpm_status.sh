@@ -1,13 +1,13 @@
 #!/bin/bash
 #Ramil Valitov ramilvalitov@gmail.com
 #https://github.com/rvalitov/zabbix-php-fpm
+#Script gets status of PHP-FPM pool
 
 S_FCGI=`type -P cgi-fcgi`
 S_GREP=`type -P grep`
 
 if [[ ! -f $S_FCGI ]]; then
 	echo "Utility 'cgi-fcgi' not found. Please, install it first."
-	echo "In Debian you should install a package libfcgi0ldbl"
 	exit 1
 fi
 
