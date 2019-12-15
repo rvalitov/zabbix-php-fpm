@@ -1,6 +1,7 @@
 #!/bin/bash
 #Ramil Valitov ramilvalitov@gmail.com
 #https://github.com/rvalitov/zabbix-php-fpm
+#This script scans local machine for active PHP-FPM pools and returns them as a list in JSON format
 
 S_PS=`type -P ps`
 S_GREP=`type -P grep`
@@ -55,6 +56,7 @@ function PrintDebug(){
 mapfile -t PS_LIST < <( $S_PS ax | $S_GREP "php-fpm: pool " | $S_GREP -v grep )
 POOL_LIST=`printf '%s\n' "${PS_LIST[@]}" | $S_AWK '{print $NF}' | $S_SORT -u`
 POOL_FIRST=0
+#We store the resulting JSON data for Zabbix in the following var:
 RESULT_DATA="{\"data\":["
 while IFS= read -r line
 do
@@ -68,7 +70,8 @@ do
 
         #Check all matching processes, because we may face a redirect (or a symlink?), examples:
         #php-fpm7. 1203 www-data 5u unix 0x000000006509e31f 0t0 15068771 type=STREAM
-        #php-fpm7. 1203 www-data 8u IPv4 15070917 0t0 TCP localhost.localdomain:41610->localhost.
+        #php-fpm7. 6086 www-data 11u IPv6 21771 0t0 TCP *:9000 (LISTEN)
+        #php-fpm7. 1203 www-data 8u IPv4 15070917 0t0 TCP localhost.localdomain:23054->localhost.localdomain:postgresql (ESTABLISHED)
         #More info at https://github.com/rvalitov/zabbix-php-fpm/issues/12
 
         #Extract only important information:
@@ -93,11 +96,17 @@ do
                         #We have a TCP connection here, check it:
                         CONNECTION_TYPE=`echo "${pool}" | $S_AWK '{print $8}'`
                         if [[ $CONNECTION_TYPE == "TCP" ]]; then
-                            #Check and replace * to localhost if it's found. Asterisk means that the PHP listens on
-                            #all interfaces.
-                            POOL_SOCKET=`echo -n ${POOL_SOCKET/*:/localhost:}`
-                            FOUND_POOL="1"
-                            PrintDebug "Success: found TCP connection $POOL_SOCKET for pool $line, raw process info: $pool"
+                            #The connection must have state LISTEN:
+                            LISTEN=`echo ${pool} | $S_GREP -e (LISTEN)`
+                            if [[ ! -z $LISTEN ]]; then
+                                #Check and replace * to localhost if it's found. Asterisk means that the PHP listens on
+                                #all interfaces.
+                                POOL_SOCKET=`echo -n ${POOL_SOCKET/*:/localhost:}`
+                                FOUND_POOL="1"
+                                PrintDebug "Success: found TCP connection $POOL_SOCKET for pool $line, raw process info: $pool"
+                            else
+                                PrintDebug "Warning: expected connection state must be LISTEN, but it was not detected for pool $line, raw process info: $pool"
+                            fi
                         else
                             PrintDebug "Warning: expected connection type is TCP, but found $CONNECTION_TYPE for pool $line, raw process info: $pool"
                         fi
