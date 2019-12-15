@@ -104,14 +104,25 @@ Perform the following operations on all servers with Zabbix and PHP-FPM from whi
 #### 1.1. Install Prerequisites
 Install required packages.
 
-For `apt-get` based environments (Debian, Ubuntu, etc.):
+##### For `apt-get` based environments (Debian, Ubuntu, etc.):
 
 ```bash
 apt-get update
 apt-get -y install grep gawk lsof jq libfcgi0ldbl
 ```
+Additionally, for Debian Jessie 8.x and earlier (or for equivalent Ubuntu version):
 
-For `yum` based environments (CentOS):
+```bash
+apt-get -y install libfcgi0ldbl
+```
+
+Additionally, for Debian Stretch 9.x and later (or for equivalent Ubuntu version):
+
+```bash
+apt-get -y install libfcgi-bin
+```
+
+##### For `yum` based environments (CentOS):
 
 ```bash
 yum check-update
@@ -146,8 +157,13 @@ chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
 chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 ```
 
-#### 1.3. Allow root for Zabbix Agent
-Automatic detection of sockets used by pools requires root previliges. Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `AllowRoot` option and enable it:
+#### 1.3. Root previliges
+Automatic detection of pools requires root previliges. You can achieve it using one of the methods below.
+
+##### 1.3.1 Root previliges for Zabbix Agent
+This method sets root previliges for Zabbix Agent, i.e. the Zabbix Agent will run under `root` user, as a result all user scripts will also have the root access rights. 
+
+Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `AllowRoot` option and enable it:
 
 ```
 ### Option: AllowRoot
@@ -161,7 +177,42 @@ Automatic detection of sockets used by pools requires root previliges. Edit Zabb
 # Default:
 # AllowRoot=0
 AllowRoot=1
-```  
+```
+
+##### 1.3.2 Grant previliges to the PHP-FPM autodiscovery script only
+If you don't want to run Zabbix Agent as root, then you can configure the previliges only to our script. In this case you need to have `sudo` installed:
+
+```console
+apt-get install sudo
+```
+
+Now edit the `/etc/sudoers` file by running command:
+
+```console
+visudo
+```
+
+Add the following line to this file:
+
+```
+zabbix ALL = NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh
+```
+
+Here we specified `zabbix` as the user under which the Zabbix Agent is run. This is the default name, but if you have a custom installation with different name, then please, change it accordingly. Save and exit the editor. Your modifications will be applied.
+
+Now edit the file `userparameter_php_fpm.conf`. Find the line:
+
+```
+UserParameter=php-fpm.discover,/etc/zabbix/zabbix_php_fpm_discovery.sh
+```
+
+Add `sudo` there, so the line should be:
+
+```
+UserParameter=php-fpm.discover,sudo /etc/zabbix/zabbix_php_fpm_discovery.sh
+```
+
+That's all. 
 
 #### 1.4. Linux Tuning (optional)
 Usually PHP-FPM [backlog option](https://www.php.net/manual/en/install.fpm.configuration.php#listen-backlog) is limited by Linux kernel settings and equals to `128` by default.
@@ -277,7 +328,7 @@ The output should be a valid JSON with a list of pools and their sockets, someth
       },
       {
          "{#POOLNAME}":"www",
-         "{#POOLSOCKET}":"/run/php/php7.3-fpm.sock"
+         "{#POOLSOCKET}":"127.0.0.1:9000"
       }
    ]
 }
@@ -300,6 +351,29 @@ ps aux | grep "php-fpm"
 ```
 
 In the list you should see your pool. If it's not there, then it means it's not running (not functional).
+
+## How to troubleshoot template import failure
+To view the import errors, please click the "Details" section in the Zabbix GUI. It should be on the same import page near the error message:
+
+![Zabbix template import error details](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/zabbix-import-error.jpg)
+
+Then check the Zabbix server log, for Debian/Ubuntu it's located at `/var/log/zabbix/zabbix_server.log`.
+
+## Test with `zabbix_get`
+Please, use the [`zabbix_get`](https://www.zabbix.com/documentation/4.4/manual/concepts/get) utility from your Zabbix Server to test that you can get the data from the Zabbix Agent (host):
+
+```console
+zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover
+zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover.status[POOL_URL,POOL_PATH]
+``` 
+In the above example we use the following values:
+
+- `127.0.0.1` is the IP address of the host where the Zabbix Agent is installed and where the PHP-FPM is running
+- `10050` is the port of the Zabbix Agent
+- `POOL_URL` is the socket of the pool or IP and port combination, example: `/var/lib/php7.3-fpm/web1.sock` or `127.0.0.1:9000`
+- `POOL_PATH` is the status path of PHP-FPM that you set in [`pm.status_path`](https://github.com/rvalitov/zabbix-php-fpm#16-adjust-php-fpm-pools-configuration), the default value is `/php-fpm-status`.
+
+The commands above should return valid JSON data. If any error happens then it will be displayed. 
 
 # Compatibility
 Tested with:
