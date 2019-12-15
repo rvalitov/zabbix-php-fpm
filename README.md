@@ -157,11 +157,11 @@ chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
 chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 ```
 
-#### 1.3. Root previliges
-Automatic detection of pools requires root previliges. You can achieve it using one of the methods below.
+#### 1.3. Root privileges
+Automatic detection of pools requires root privileges. You can achieve it using one of the methods below.
 
-##### 1.3.1 Root previliges for Zabbix Agent
-This method sets root previliges for Zabbix Agent, i.e. the Zabbix Agent will run under `root` user, as a result all user scripts will also have the root access rights. 
+##### 1.3.1 Root privileges for Zabbix Agent
+This method sets root privileges for Zabbix Agent, i.e. the Zabbix Agent will run under `root` user, as a result all user scripts will also have the root access rights. 
 
 Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `AllowRoot` option and enable it:
 
@@ -179,8 +179,8 @@ Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `All
 AllowRoot=1
 ```
 
-##### 1.3.2 Grant previliges to the PHP-FPM autodiscovery script only
-If you don't want to run Zabbix Agent as root, then you can configure the previliges only to our script. In this case you need to have `sudo` installed:
+##### 1.3.2 Grant privileges to the PHP-FPM auto discovery script only
+If you don't want to run Zabbix Agent as root, then you can configure the privileges only to our script. In this case you need to have `sudo` installed:
 
 ```console
 apt-get install sudo
@@ -305,8 +305,8 @@ If you use a custom status path, then configure it in the macros section of the 
 The setup is finished, just wait a couple of minutes till Zabbix discovers all your pools and captures the data.
 
 # Testing and Troubleshooting
-## Check autodiscovery
-First test that autodiscovery of PHP-FPM pools works on your machine. Run the following command:
+## Check auto discovery
+First test that auto discovery of PHP-FPM pools works on your machine. Run the following command:
 
 ```console
 root@server:/etc/zabbix#bash /etc/zabbix/zabbix_php_fpm_discovery.sh
@@ -347,17 +347,17 @@ Resulting JSON data for Zabbix:
 
 Any warning or error messages will be displayed here. 
 
-**Note:** having a warning messages does not necceserraly mean that you have a error here, because different OS may provide data about processes differently. So, if you don't see any error messages here, then the script works fine.
+**Note:** having a warning messages does not necessarily mean that you have a error here, because different OS may provide data about processes differently. So, if you don't see any error messages here, then the script works fine.
 
 The script can show you the list of utilities that are missing on your system and must be installed. We require the following utilities to be installed:
 
-- awk
-- ps
-- grep
-- sort
-- head
-- lsof
-- jq   
+- `awk`
+- `ps`
+- `grep`
+- `sort`
+- `head`
+- `lsof`
+- `jq`   
 
 If some pools are missing, then you can manually check that they do really exist and are running, for example, using command:
 
