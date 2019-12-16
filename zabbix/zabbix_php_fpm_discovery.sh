@@ -75,7 +75,7 @@ do
         #More info at https://github.com/rvalitov/zabbix-php-fpm/issues/12
 
         #Extract only important information:
-        mapfile -t POOL_PARAMS_LIST < <( $S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP -e unix -e TCP )
+        POOL_PARAMS_LIST=`$S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP -e unix -e TCP`
         FOUND_POOL=""
         while IFS= read -r pool
         do
