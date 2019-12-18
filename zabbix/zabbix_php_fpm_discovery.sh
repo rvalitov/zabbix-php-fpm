@@ -53,7 +53,7 @@ function PrintDebug(){
 	fi
 }
 
-mapfile -t PS_LIST < <( $S_PS ax | $S_GREP -F "php-fpm: pool " | $S_GREP -F -v grep )
+mapfile -t PS_LIST < <( $S_PS ax | $S_GREP -F "php-fpm: pool " | $S_GREP -F -v "grep" )
 POOL_LIST=`printf '%s\n' "${PS_LIST[@]}" | $S_AWK '{print $NF}' | $S_SORT -u`
 POOL_FIRST=0
 #We store the resulting JSON data for Zabbix in the following var:
@@ -76,7 +76,7 @@ do
 
         PrintDebug "Started analysis of pool $line, PID $POOL_PID"
         #Extract only important information:
-        POOL_PARAMS_LIST=`$S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP -w -e unix -e TCP`
+        POOL_PARAMS_LIST=`$S_LSOF -p $POOL_PID 2>/dev/null | $S_GREP -w -e "unix" -e "TCP"`
         FOUND_POOL=""
         while IFS= read -r pool
         do
@@ -99,7 +99,7 @@ do
                             CONNECTION_TYPE=`echo "${pool}" | $S_AWK '{print $8}'`
                             if [[ $CONNECTION_TYPE == "TCP" ]]; then
                                 #The connection must have state LISTEN:
-                                LISTEN=`echo ${pool} | $S_GREP -F -w (LISTEN)`
+                                LISTEN=`echo ${pool} | $S_GREP -F -w "(LISTEN)"`
                                 if [[ ! -z $LISTEN ]]; then
                                     #Check and replace * to localhost if it's found. Asterisk means that the PHP listens on
                                     #all interfaces.
