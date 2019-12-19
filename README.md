@@ -157,11 +157,11 @@ chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
 chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 ```
 
-#### 1.3. Root previliges
-Automatic detection of pools requires root previliges. You can achieve it using one of the methods below.
+#### 1.3. Root privileges
+Automatic detection of pools requires root privileges. You can achieve it using one of the methods below.
 
-##### 1.3.1 Root previliges for Zabbix Agent
-This method sets root previliges for Zabbix Agent, i.e. the Zabbix Agent will run under `root` user, as a result all user scripts will also have the root access rights. 
+##### 1.3.1 Root privileges for Zabbix Agent
+This method sets root privileges for Zabbix Agent, i.e. the Zabbix Agent will run under `root` user, as a result all user scripts will also have the root access rights. 
 
 Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `AllowRoot` option and enable it:
 
@@ -179,8 +179,8 @@ Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `All
 AllowRoot=1
 ```
 
-##### 1.3.2 Grant previliges to the PHP-FPM autodiscovery script only
-If you don't want to run Zabbix Agent as root, then you can configure the previliges only to our script. In this case you need to have `sudo` installed:
+##### 1.3.2 Grant privileges to the PHP-FPM auto discovery script only
+If you don't want to run Zabbix Agent as root, then you can configure the privileges only to our script. In this case you need to have `sudo` installed:
 
 ```console
 apt-get install sudo
@@ -305,15 +305,15 @@ If you use a custom status path, then configure it in the macros section of the 
 The setup is finished, just wait a couple of minutes till Zabbix discovers all your pools and captures the data.
 
 # Testing and Troubleshooting
-## Check autodiscovery
-First test that autodiscovery of PHP-FPM pools works on your machine. Run the following command:
+## Check auto discovery
+First test that auto discovery of PHP-FPM pools works on your machine. Run the following command:
 
 ```console
-bash /etc/zabbix/zabbix_php_fpm_discovery.sh
+root@server:/etc/zabbix#bash /etc/zabbix/zabbix_php_fpm_discovery.sh
 ```
 **Important:** please make sure that you use `bash` in the command above, not `sh` or other alternatives, otherwise you may get a script syntax error message.
 
-The output should be a valid JSON with a list of pools and their sockets, something like below:
+The output should be a valid JSON with a list of pools and their sockets, something like below (you may want to use [online JSON tool](https://jsonformatter.curiousconcept.com/) for pretty formatting of the response):
 
 ```json
 {
@@ -334,17 +334,32 @@ The output should be a valid JSON with a list of pools and their sockets, someth
 }
 ```
 
-If this script does not display the list, then it will show you the list of utilities that are missing on your system and must be installed. We require the following utilities to be installed:
+For further investigation you can run the script above with `debug` option to get more details, example:
+```console
+root@server:/etc/zabbix#bash /etc/zabbix/zabbix_php_fpm_discovery.sh debug
+Debug mode enabled
+Success: found socket /var/lib/php7.3-fpm/web1.sock for pool web1, raw process info: php-fpm7. 5094 web1 11u unix 0x00000000dd9ea858 0t0 104495372 /var/lib/php7.3-fpm/web1.sock type=STREAM
+Success: found socket /var/lib/php7.3-fpm/web4.sock for pool web4, raw process info: php-fpm7. 5096 web4 11u unix 0x00000000562748dd 0t0 104495374 /var/lib/php7.3-fpm/web4.sock type=STREAM
+Success: found socket /run/php/php7.3-fpm.sock for pool www, raw process info: php-fpm7. 5098 www-data 11u unix 0x00000000ef5ef2fb 0t0 104495376 /run/php/php7.3-fpm.sock type=STREAM
+Resulting JSON data for Zabbix:
+{"data":[{"{#POOLNAME}":"web1","{#POOLSOCKET}":"/var/lib/php7.3-fpm/web1.sock"},{"{#POOLNAME}":"web4","{#POOLSOCKET}":"/var/lib/php7.3-fpm/web4.sock"},{"{#POOLNAME}":"www","{#POOLSOCKET}":"/run/php/php7.3-fpm.sock"}]}
+```
 
-- awk
-- ps
-- grep
-- sort
-- head
-- lsof
-- jq
+Any warning or error messages will be displayed here. 
 
-If some pools are missing, then check that they do really exist and are running, for example, using command:
+**Note:** having a warning messages does not necessarily mean that you have a error here, because different OS may provide data about processes differently. So, if you don't see any error messages here, then the script works fine.
+
+The script can show you the list of utilities that are missing on your system and must be installed. We require the following utilities to be installed:
+
+- `awk`
+- `ps`
+- `grep`
+- `sort`
+- `head`
+- `lsof`
+- `jq`   
+
+If some pools are missing, then you can manually check that they do really exist and are running, for example, using command:
 
 ```console
 ps aux | grep "php-fpm"
