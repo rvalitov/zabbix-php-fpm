@@ -11,7 +11,7 @@
 - Supported types of PHP [process manager](https://www.php.net/manual/en/install.fpm.configuration.php#pm):
 	- [x] dynamic
 	- [x] static
-	- [ ] ondemand - not supported yet, because of its working logic, see issue #11 
+	- [ ] ondemand - has some problems, because of its working logic, see issue [#11](https://github.com/rvalitov/zabbix-php-fpm/issues/11) 
 - Supports multiple PHP versions, i.e. you can use PHP 7.2 and PHP 7.3 on the same server and we will detect them all
 - Easy configuration
 - Supports [ISPConfig](https://www.ispconfig.org/)
