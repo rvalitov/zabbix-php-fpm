@@ -6,12 +6,16 @@
 
 ## Main features
 
-- Supports auto discovery of PHP-FPM pools (LLD) and automatic detection of sockets used by pools
-- Supports multiple PHP-FPM pools
+- Provides auto discovery of PHP-FPM pools (LLD)
+- Detects pools that [listen](https://www.php.net/manual/en/install.fpm.configuration.php#listen) via socket and via TCP
+- Supported types of PHP [process manager](https://www.php.net/manual/en/install.fpm.configuration.php#pm):
+	- [x] dynamic
+	- [x] static
+	- [ ] ondemand - not supported yet, because of its working logic, see issue #11 
 - Supports multiple PHP versions, i.e. you can use PHP 7.2 and PHP 7.3 on the same server and we will detect them all
 - Easy configuration
-- Supports ISPConfig
-- Script is in pure bash: no need to install Perl, PHP, Go or other languages. 
+- Supports [ISPConfig](https://www.ispconfig.org/)
+- Script is in pure `bash`: no need to install `Perl`, `Go` or other languages. 
 
 ## Provided Items
 We capture only useful data from host and PHP-FPM status page:
