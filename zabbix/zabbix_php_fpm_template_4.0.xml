@@ -1406,7 +1406,6 @@
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
-                            <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
                             <expression>{Template App PHP-FPM:php-fpm.slow_requests[{#POOLSOCKET}].change()}&gt;0</expression>
@@ -1422,7 +1421,6 @@
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
-                            <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
                             <expression>{Template App PHP-FPM:php-fpm.process_manager[{#POOLSOCKET}].diff()}=1</expression>
@@ -1438,7 +1436,6 @@
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
-                            <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
                             <expression>{Template App PHP-FPM:php-fpm.listen_queue[{#POOLSOCKET}].diff()}=1</expression>
@@ -1454,7 +1451,6 @@
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
-                            <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
                             <expression>{Template App PHP-FPM:proc.mem[&quot;php-fpm: pool {#POOLNAME}&quot;,,,,pmem].last()}&gt;=50</expression>
@@ -1470,7 +1466,6 @@
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
-                            <tags/>
                         </trigger_prototype>
                     </trigger_prototypes>
                     <graph_prototypes>
@@ -1876,7 +1871,6 @@
                     </screen_items>
                 </screen>
             </screens>
-            <tags/>
         </template>
     </templates>
 </zabbix_export>
