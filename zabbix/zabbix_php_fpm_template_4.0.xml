@@ -1717,7 +1717,6 @@
                     <ssl_key_password/>
                     <verify_peer>0</verify_peer>
                     <verify_host>0</verify_host>
-                    <lld_macro_paths/>
                     <preprocessing/>
                     <master_item/>
                 </discovery_rule>
