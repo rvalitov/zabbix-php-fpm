@@ -183,6 +183,66 @@ Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `All
 AllowRoot=1
 ```
 
+In the same file find option `User` and set it to `root`:
+
+
+```
+### Option: User
+#       Drop privileges to a specific, existing user on the system.
+#       Only has effect if run as 'root' and AllowRoot is disabled.
+#
+# Mandatory: no
+# Default:
+# User=zabbix
+User=root
+```
+
+Restart the Zabbix agent service, for example:
+
+```console
+systemctl restart zabbix-agent
+```
+
+Check that the Zabbix agent runs under `root` user:
+
+```console
+user@server:~$ ps aux | grep "zabbix_agent"
+user       3761  0.0  0.0   8132   928 pts/0    S+   18:32   0:00 grep zabbix_agent
+root      6026  0.0  0.0  86968  3472 ?        S    Dec14   0:00 /usr/sbin/zabbix_agentd -c /etc/zabbix/zabbix_agentd.conf
+root      6027  0.7  0.0  87056  5044 ?        S    Dec14  76:00 /usr/sbin/zabbix_agentd: collector [idle 1 sec]
+root      6028  0.0  0.0 161160 11092 ?        S    Dec14   7:41 /usr/sbin/zabbix_agentd: listener #1 [waiting for connection]
+root      6029  0.0  0.0 161244 11180 ?        S    Dec14   7:43 /usr/sbin/zabbix_agentd: listener #2 [waiting for connection]
+root      6030  0.0  0.0 161136 11072 ?        S    Dec14   7:43 /usr/sbin/zabbix_agentd: listener #3 [waiting for connection]
+```
+
+You should see `root` above. Otherwise, the Zabbix agent works without `root` privileges and will not be able to discover the PHP pools.
+
+Since some updates of Zabbix agent and in some OS the above changes are not enough and the following actions must be performed (as desribed in Zabbix manual for versions [4.0](https://www.zabbix.com/documentation/4.0/manual/appendix/install/run_agent_as_root), [4.4](https://www.zabbix.com/documentation/4.4/manual/appendix/install/run_agent_as_root)). 
+
+Create a directory for configuration file:
+
+```console
+mkdir /etc/systemd/system/zabbix-agent.service.d
+
+```
+
+Create file `/etc/systemd/system/zabbix-agent.service.d/override.conf` with the following content:
+
+```console
+[Service]
+User=root
+Group=root
+```
+
+Reload daemons and restart `zabbix-agent` service:
+
+```console
+systemctl daemon-reload
+systemctl restart zabbix-agent
+```
+
+Check again that the Zabbix agent runs as `root` now.
+
 ##### 1.3.2 Grant privileges to the PHP-FPM auto discovery script only
 If you don't want to run Zabbix Agent as root, then you can configure the privileges only to our script. In this case you need to have `sudo` installed:
 
