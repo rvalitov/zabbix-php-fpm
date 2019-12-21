@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.2</version>
-    <date>2019-08-13T08:28:09Z</date>
+    <date>2019-12-21T12:24:20Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -1495,49 +1495,13 @@
                                 <graph_item>
                                     <sortorder>0</sortorder>
                                     <drawtype>1</drawtype>
-                                    <color>1A7C11</color>
+                                    <color>90CAF9</color>
                                     <yaxisside>0</yaxisside>
                                     <calc_fnc>2</calc_fnc>
                                     <type>0</type>
                                     <item>
                                         <host>Template App PHP-FPM</host>
                                         <key>php-fpm.accepted_conn[{#POOLSOCKET}]</key>
-                                    </item>
-                                </graph_item>
-                                <graph_item>
-                                    <sortorder>1</sortorder>
-                                    <drawtype>0</drawtype>
-                                    <color>BF00FF</color>
-                                    <yaxisside>1</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
-                                    <type>0</type>
-                                    <item>
-                                        <host>Template App PHP-FPM</host>
-                                        <key>php-fpm.cpu[{#POOLNAME}]</key>
-                                    </item>
-                                </graph_item>
-                                <graph_item>
-                                    <sortorder>2</sortorder>
-                                    <drawtype>0</drawtype>
-                                    <color>4000FF</color>
-                                    <yaxisside>1</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
-                                    <type>0</type>
-                                    <item>
-                                        <host>Template App PHP-FPM</host>
-                                        <key>proc.mem[&quot;php-fpm: pool {#POOLNAME}&quot;,,,,pmem]</key>
-                                    </item>
-                                </graph_item>
-                                <graph_item>
-                                    <sortorder>3</sortorder>
-                                    <drawtype>0</drawtype>
-                                    <color>FF0000</color>
-                                    <yaxisside>1</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
-                                    <type>0</type>
-                                    <item>
-                                        <host>Template App PHP-FPM</host>
-                                        <key>php-fpm.queue[{#POOLSOCKET}]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -1563,25 +1527,13 @@
                                 <graph_item>
                                     <sortorder>0</sortorder>
                                     <drawtype>1</drawtype>
-                                    <color>1A7C11</color>
+                                    <color>FF8A65</color>
                                     <yaxisside>0</yaxisside>
                                     <calc_fnc>2</calc_fnc>
                                     <type>0</type>
                                     <item>
                                         <host>Template App PHP-FPM</host>
                                         <key>php-fpm.cpu[{#POOLNAME}]</key>
-                                    </item>
-                                </graph_item>
-                                <graph_item>
-                                    <sortorder>1</sortorder>
-                                    <drawtype>1</drawtype>
-                                    <color>4000FF</color>
-                                    <yaxisside>1</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
-                                    <type>0</type>
-                                    <item>
-                                        <host>Template App PHP-FPM</host>
-                                        <key>php-fpm.accepted_conn[{#POOLSOCKET}]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -1607,25 +1559,13 @@
                                 <graph_item>
                                     <sortorder>0</sortorder>
                                     <drawtype>1</drawtype>
-                                    <color>FF0000</color>
+                                    <color>EF5350</color>
                                     <yaxisside>0</yaxisside>
                                     <calc_fnc>2</calc_fnc>
                                     <type>0</type>
                                     <item>
                                         <host>Template App PHP-FPM</host>
                                         <key>php-fpm.max_children_reached[{#POOLSOCKET}]</key>
-                                    </item>
-                                </graph_item>
-                                <graph_item>
-                                    <sortorder>1</sortorder>
-                                    <drawtype>0</drawtype>
-                                    <color>1A7C11</color>
-                                    <yaxisside>1</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
-                                    <type>0</type>
-                                    <item>
-                                        <host>Template App PHP-FPM</host>
-                                        <key>php-fpm.accepted_conn[{#POOLSOCKET}]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -1650,7 +1590,7 @@
                             <graph_items>
                                 <graph_item>
                                     <sortorder>0</sortorder>
-                                    <drawtype>1</drawtype>
+                                    <drawtype>5</drawtype>
                                     <color>00BFFF</color>
                                     <yaxisside>0</yaxisside>
                                     <calc_fnc>2</calc_fnc>
@@ -1662,38 +1602,14 @@
                                 </graph_item>
                                 <graph_item>
                                     <sortorder>1</sortorder>
-                                    <drawtype>0</drawtype>
-                                    <color>BF00FF</color>
-                                    <yaxisside>1</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
-                                    <type>0</type>
-                                    <item>
-                                        <host>Template App PHP-FPM</host>
-                                        <key>php-fpm.cpu[{#POOLNAME}]</key>
-                                    </item>
-                                </graph_item>
-                                <graph_item>
-                                    <sortorder>2</sortorder>
-                                    <drawtype>0</drawtype>
-                                    <color>4000FF</color>
-                                    <yaxisside>1</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
-                                    <type>0</type>
-                                    <item>
-                                        <host>Template App PHP-FPM</host>
-                                        <key>proc.mem[&quot;php-fpm: pool {#POOLNAME}&quot;,,,,pmem]</key>
-                                    </item>
-                                </graph_item>
-                                <graph_item>
-                                    <sortorder>3</sortorder>
-                                    <drawtype>0</drawtype>
+                                    <drawtype>2</drawtype>
                                     <color>FF0000</color>
                                     <yaxisside>1</yaxisside>
                                     <calc_fnc>2</calc_fnc>
                                     <type>0</type>
                                     <item>
                                         <host>Template App PHP-FPM</host>
-                                        <key>php-fpm.queue[{#POOLSOCKET}]</key>
+                                        <key>proc.mem[&quot;php-fpm: pool {#POOLNAME}&quot;,,,,pmem]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -1718,8 +1634,8 @@
                             <graph_items>
                                 <graph_item>
                                     <sortorder>0</sortorder>
-                                    <drawtype>1</drawtype>
-                                    <color>C5CAE9</color>
+                                    <drawtype>0</drawtype>
+                                    <color>FF0080</color>
                                     <yaxisside>0</yaxisside>
                                     <calc_fnc>2</calc_fnc>
                                     <type>0</type>
@@ -1740,18 +1656,6 @@
                                         <key>php-fpm.idle_processes[{#POOLSOCKET}]</key>
                                     </item>
                                 </graph_item>
-                                <graph_item>
-                                    <sortorder>2</sortorder>
-                                    <drawtype>0</drawtype>
-                                    <color>BF00FF</color>
-                                    <yaxisside>1</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
-                                    <type>0</type>
-                                    <item>
-                                        <host>Template App PHP-FPM</host>
-                                        <key>php-fpm.accepted_conn[{#POOLSOCKET}]</key>
-                                    </item>
-                                </graph_item>
                             </graph_items>
                         </graph_prototype>
                         <graph_prototype>
@@ -1768,23 +1672,32 @@
                             <percent_left>0.0000</percent_left>
                             <percent_right>0.0000</percent_right>
                             <ymin_type_1>1</ymin_type_1>
-                            <ymax_type_1>2</ymax_type_1>
+                            <ymax_type_1>0</ymax_type_1>
                             <ymin_item_1>0</ymin_item_1>
-                            <ymax_item_1>
-                                <host>Template App PHP-FPM</host>
-                                <key>php-fpm.listen_queue_len[{#POOLSOCKET}]</key>
-                            </ymax_item_1>
+                            <ymax_item_1>0</ymax_item_1>
                             <graph_items>
                                 <graph_item>
                                     <sortorder>0</sortorder>
-                                    <drawtype>1</drawtype>
-                                    <color>F63100</color>
+                                    <drawtype>5</drawtype>
+                                    <color>FB8C00</color>
                                     <yaxisside>0</yaxisside>
                                     <calc_fnc>2</calc_fnc>
                                     <type>0</type>
                                     <item>
                                         <host>Template App PHP-FPM</host>
                                         <key>php-fpm.listen_queue[{#POOLSOCKET}]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <drawtype>2</drawtype>
+                                    <color>FF0000</color>
+                                    <yaxisside>1</yaxisside>
+                                    <calc_fnc>2</calc_fnc>
+                                    <type>0</type>
+                                    <item>
+                                        <host>Template App PHP-FPM</host>
+                                        <key>php-fpm.queue[{#POOLSOCKET}]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -1822,7 +1735,147 @@
                 </macro>
             </macros>
             <templates/>
-            <screens/>
+            <screens>
+                <screen>
+                    <name>PHP-FPM</name>
+                    <hsize>2</hsize>
+                    <vsize>3</vsize>
+                    <screen_items>
+                        <screen_item>
+                            <resourcetype>20</resourcetype>
+                            <width>500</width>
+                            <height>100</height>
+                            <x>0</x>
+                            <y>0</y>
+                            <colspan>1</colspan>
+                            <rowspan>1</rowspan>
+                            <elements>0</elements>
+                            <valign>0</valign>
+                            <halign>0</halign>
+                            <style>0</style>
+                            <url/>
+                            <dynamic>0</dynamic>
+                            <sort_triggers>0</sort_triggers>
+                            <resource>
+                                <name>Pool {#POOLNAME} Connections</name>
+                                <host>Template App PHP-FPM</host>
+                            </resource>
+                            <max_columns>1</max_columns>
+                            <application/>
+                        </screen_item>
+                        <screen_item>
+                            <resourcetype>20</resourcetype>
+                            <width>500</width>
+                            <height>100</height>
+                            <x>1</x>
+                            <y>0</y>
+                            <colspan>1</colspan>
+                            <rowspan>1</rowspan>
+                            <elements>0</elements>
+                            <valign>0</valign>
+                            <halign>0</halign>
+                            <style>0</style>
+                            <url/>
+                            <dynamic>0</dynamic>
+                            <sort_triggers>0</sort_triggers>
+                            <resource>
+                                <name>Pool {#POOLNAME} Process</name>
+                                <host>Template App PHP-FPM</host>
+                            </resource>
+                            <max_columns>1</max_columns>
+                            <application/>
+                        </screen_item>
+                        <screen_item>
+                            <resourcetype>20</resourcetype>
+                            <width>500</width>
+                            <height>100</height>
+                            <x>0</x>
+                            <y>1</y>
+                            <colspan>1</colspan>
+                            <rowspan>1</rowspan>
+                            <elements>0</elements>
+                            <valign>0</valign>
+                            <halign>0</halign>
+                            <style>0</style>
+                            <url/>
+                            <dynamic>0</dynamic>
+                            <sort_triggers>0</sort_triggers>
+                            <resource>
+                                <name>Pool {#POOLNAME} CPU</name>
+                                <host>Template App PHP-FPM</host>
+                            </resource>
+                            <max_columns>1</max_columns>
+                            <application/>
+                        </screen_item>
+                        <screen_item>
+                            <resourcetype>20</resourcetype>
+                            <width>500</width>
+                            <height>100</height>
+                            <x>1</x>
+                            <y>1</y>
+                            <colspan>1</colspan>
+                            <rowspan>1</rowspan>
+                            <elements>0</elements>
+                            <valign>0</valign>
+                            <halign>0</halign>
+                            <style>0</style>
+                            <url/>
+                            <dynamic>0</dynamic>
+                            <sort_triggers>0</sort_triggers>
+                            <resource>
+                                <name>Pool {#POOLNAME} Memory</name>
+                                <host>Template App PHP-FPM</host>
+                            </resource>
+                            <max_columns>1</max_columns>
+                            <application/>
+                        </screen_item>
+                        <screen_item>
+                            <resourcetype>20</resourcetype>
+                            <width>500</width>
+                            <height>100</height>
+                            <x>0</x>
+                            <y>2</y>
+                            <colspan>1</colspan>
+                            <rowspan>1</rowspan>
+                            <elements>0</elements>
+                            <valign>0</valign>
+                            <halign>0</halign>
+                            <style>0</style>
+                            <url/>
+                            <dynamic>0</dynamic>
+                            <sort_triggers>0</sort_triggers>
+                            <resource>
+                                <name>Pool {#POOLNAME} Queue</name>
+                                <host>Template App PHP-FPM</host>
+                            </resource>
+                            <max_columns>1</max_columns>
+                            <application/>
+                        </screen_item>
+                        <screen_item>
+                            <resourcetype>20</resourcetype>
+                            <width>500</width>
+                            <height>100</height>
+                            <x>1</x>
+                            <y>2</y>
+                            <colspan>1</colspan>
+                            <rowspan>1</rowspan>
+                            <elements>0</elements>
+                            <valign>0</valign>
+                            <halign>0</halign>
+                            <style>0</style>
+                            <url/>
+                            <dynamic>0</dynamic>
+                            <sort_triggers>0</sort_triggers>
+                            <resource>
+                                <name>Pool {#POOLNAME} Max Children Reached</name>
+                                <host>Template App PHP-FPM</host>
+                            </resource>
+                            <max_columns>1</max_columns>
+                            <application/>
+                        </screen_item>
+                    </screen_items>
+                </screen>
+            </screens>
             <tags/>
         </template>
     </templates>
