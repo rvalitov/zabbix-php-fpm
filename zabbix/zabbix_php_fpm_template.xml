@@ -117,7 +117,7 @@
                     <description/>
                     <item_prototypes>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Accepted Connections Per Second</name>
+                            <name>Pool {#POOLNAME}: connections per sec</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -196,7 +196,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Active Processes</name>
+                            <name>Pool {#POOLNAME}: active processes</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -269,7 +269,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): CPU Average Utilization</name>
+                            <name>Pool {#POOLNAME}: CPU avg utilization</name>
                             <type>15</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -333,7 +333,7 @@
                             <master_item/>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Idle Processes</name>
+                            <name>Pool {#POOLNAME}: idle processes</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -406,7 +406,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Listen Queue</name>
+                            <name>Pool {#POOLNAME}: listen queue</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -479,7 +479,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Listen Queue Length</name>
+                            <name>Pool {#POOLNAME}: listen queue length</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -552,7 +552,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Max Active Processes</name>
+                            <name>Pool {#POOLNAME}: max active processes</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -625,7 +625,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Max Children Reached</name>
+                            <name>Pool {#POOLNAME}: max children reached</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -704,7 +704,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Max Listen Queue</name>
+                            <name>Pool {#POOLNAME}: max listen queue</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -777,7 +777,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Process Manager</name>
+                            <name>Pool {#POOLNAME}: process manager</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -850,7 +850,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Queue Utilization</name>
+                            <name>Pool {#POOLNAME}: queue utilization</name>
                             <type>15</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -914,7 +914,7 @@
                             <master_item/>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Slow Requests</name>
+                            <name>Pool {#POOLNAME}: slow requests</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -993,7 +993,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Start Since</name>
+                            <name>Pool {#POOLNAME}: start since</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -1066,7 +1066,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Start Time</name>
+                            <name>Pool {#POOLNAME}: start time</name>
                             <type>18</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -1139,7 +1139,7 @@
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM Pool {#POOLNAME} status</name>
+                            <name>Pool {#POOLNAME} status</name>
                             <type>0</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -1199,7 +1199,7 @@
                             <master_item/>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): CPU Utilization</name>
+                            <name>Pool {#POOLNAME}: CPU utilization</name>
                             <type>0</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -1263,7 +1263,7 @@
                             <master_item/>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Memory Utilization</name>
+                            <name>Pool {#POOLNAME}: memory utilization</name>
                             <type>0</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -1327,7 +1327,7 @@
                             <master_item/>
                         </item_prototype>
                         <item_prototype>
-                            <name>PHP-FPM ({#POOLNAME}): Memory Used</name>
+                            <name>Pool {#POOLNAME}: memory used</name>
                             <type>0</type>
                             <snmp_community/>
                             <snmp_oid/>
