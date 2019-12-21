@@ -379,7 +379,14 @@ To view the import errors, please click the "Details" section in the Zabbix GUI.
 Then check the Zabbix server log, for Debian/Ubuntu it's located at `/var/log/zabbix/zabbix_server.log`.
 
 ## Test with `zabbix_get`
-Please, use the [`zabbix_get`](https://www.zabbix.com/documentation/4.4/manual/concepts/get) utility from your Zabbix Server to test that you can get the data from the Zabbix Agent (host):
+Please, use the [`zabbix_get`](https://www.zabbix.com/documentation/4.4/manual/concepts/get) utility from your Zabbix Server to test that you can get the data from the Zabbix Agent (host).
+Please, install this utility first, because usually it's not installed automatically:
+
+```console
+apt-get install zabbix-get
+```
+
+Example how to use the utility:
 
 ```console
 zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover
