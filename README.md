@@ -99,7 +99,19 @@ Displays the following data:
 
 - Max Children Reached
 - Accepted connections per second
-    
+
+## Provided Screens
+Screens are based on the graphs above:
+
+- Connections
+- Processes
+- CPU utilization
+- Memory utilization
+- Queue
+- Max children riched
+
+![Zabbix screens example](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/zabbix-screens.jpg)
+
 ## Installation
 
 ### 1. On Zabbix agents
