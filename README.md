@@ -459,7 +459,11 @@ In the above example we use the following values:
 - `POOL_URL` is the socket of the pool or IP and port combination, example: `/var/lib/php7.3-fpm/web1.sock` or `127.0.0.1:9000`
 - `POOL_PATH` is the status path of PHP-FPM that you set in [`pm.status_path`](https://github.com/rvalitov/zabbix-php-fpm#16-adjust-php-fpm-pools-configuration), the default value is `/php-fpm-status`.
 
-The commands above should return valid JSON data. If any error happens then it will be displayed. 
+The commands above should return valid JSON data. If any error happens then it will be displayed.
+Most common problems of testing the `php-fpm.discover` key:
+
+- The resulting JSON data is empty, but the discovery script started manually works. Then it's a problem of insufficient privileges of Zabbix agent. Please, check again section "Root privileges" of this document.
+- Error `ZBX_NOTSUPPORTED: Unsupported item key`. It means the `userparameter_php_fpm.conf` file is ignored by the Zabbix agent. Please, make sure that you copied this file to correct location and you have restarted the Zabbix agent.
 
 # Compatibility
 Tested with:
