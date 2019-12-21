@@ -1,6 +1,6 @@
 # PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools
 
-![Zabbix versions](https://img.shields.io/badge/Zabbix_versions-4.2,_4.0-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.6.x+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
+![Zabbix versions](https://img.shields.io/badge/Zabbix_versions-4.4,_4.2,_4.0-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.6.x+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
 
 ![Banner](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/repository-open-graph-template.png)
 
@@ -395,10 +395,9 @@ In the above example we use the following values:
 The commands above should return valid JSON data. If any error happens then it will be displayed. 
 
 # Compatibility
+Should work with PHP 5.6.x and later, Zabbix 4.0.x and later. Can work with any version of ISPConfig as long as you have a valid PHP-FPM status page configuration there.
+
 Tested with:
 - PHP 7.3
-- Zabbix 4.0.16, 4.2.5
+- Zabbix 4.0.16, 4.2.5, 4.4.4
 - ISPConfig v.3.1.14p2
-
-Should work with PHP 5.6.x and later, Zabbix 4.0.x and later. Can work with any version of ISPConfig as long as you have a valid PHP-FPM status page configuration there.
- Not tested with other versions of Zabbix: if it works, please let me know. 
