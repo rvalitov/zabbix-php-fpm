@@ -157,14 +157,10 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['accepted conn']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                                 <step>
                                     <type>10</type>
                                     <params/>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -236,8 +232,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['active processes']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -373,8 +367,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['idle processes']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -446,8 +438,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['listen queue']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -519,8 +509,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['listen queue len']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -592,8 +580,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['max active processes']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -665,14 +651,10 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['max children reached']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                                 <step>
                                     <type>9</type>
                                     <params/>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -744,8 +726,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['max listen queue']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -817,8 +797,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['process manager']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -954,14 +932,10 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['slow requests']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                                 <step>
                                     <type>9</type>
                                     <params/>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -1033,8 +1007,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['start since']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -1106,8 +1078,6 @@
                                 <step>
                                     <type>12</type>
                                     <params>$['start time']</params>
-                                    <error_handler>0</error_handler>
-                                    <error_handler_params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
