@@ -1,6 +1,6 @@
 # PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools
 
-![Zabbix version logo](https://img.shields.io/badge/Zabbix-v4.2+-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.6.x+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
+![Zabbix versions](https://img.shields.io/badge/Zabbix_versions-4.4,_4.2,_4.0-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.6.x+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
 
 ![Banner](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/repository-open-graph-template.png)
 
@@ -368,7 +368,7 @@ rm -rf /tmp/zabbix-php-fpm-master/
 In Zabbix frontend go to `"Configuration"->"Templates"->"Import"`:
 ![Zabbix template import interface](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/zabbix-import.jpg)
 
-Upload file `/zabbix/zabbix_php_fpm_template.xml` from the [archive](https://github.com/rvalitov/zabbix-php-fpm/archive/master.zip).
+Upload a template file from the [archive](https://github.com/rvalitov/zabbix-php-fpm/archive/master.zip) that corresponds to your version of Zabbix server. For example, use file `/zabbix/zabbix_php_fpm_template_4.0.xml` for Zabbix server 4.0. If there's no version of the template that matches your version of Zabbix server, then try to use the nearest version of the template that is not higher than your version of Zabbix server.
 
 #### 2.2. Add the template to your hosts
 Add template "Template App PHP-FPM" to the desired hosts.
@@ -478,10 +478,9 @@ Most common problems of testing the `php-fpm.discover` key:
 - Error `ZBX_NOTSUPPORTED: Unsupported item key`. It means the `userparameter_php_fpm.conf` file is ignored by the Zabbix agent. Please, make sure that you copied this file to correct location and you have restarted the Zabbix agent.
 
 # Compatibility
+Should work with PHP 5.6.x and later, Zabbix 4.0.x and later. Can work with any version of ISPConfig as long as you have a valid PHP-FPM status page configuration there.
+
 Tested with:
 - PHP 7.3
-- Zabbix 4.2.5
+- Zabbix 4.0.16, 4.2.5, 4.4.4
 - ISPConfig v.3.1.14p2
-
-Should work with PHP 5.6.x and later, Zabbix 4.2.x and later. Currently the template does not work with Zabbix 4.0.x, see [issue](https://github.com/rvalitov/zabbix-php-fpm/issues/5).
- Not tested with other versions of Zabbix: if it works, please let me know. 
