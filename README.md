@@ -176,7 +176,7 @@ chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 #### 1.3. Root privileges
 Automatic detection of pools requires root privileges. You can achieve it using one of the methods below.
 
-##### 1.3.1 Root privileges for Zabbix Agent
+##### 1.3.1. Method #1. Root privileges for Zabbix Agent
 This method sets root privileges for Zabbix Agent, i.e. the Zabbix Agent will run under `root` user, as a result all user scripts will also have the root access rights. 
 
 Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `AllowRoot` option and enable it:
@@ -255,7 +255,7 @@ systemctl restart zabbix-agent
 
 Check again that the Zabbix agent runs as `root` now.
 
-##### 1.3.2 Grant privileges to the PHP-FPM auto discovery script only
+##### 1.3.2. Method #2. Grant privileges to the PHP-FPM auto discovery script only
 If you don't want to run Zabbix Agent as root, then you can configure the privileges only to our script. In this case you need to have `sudo` installed:
 
 ```console
@@ -316,17 +316,54 @@ sysctl -p
 #### 1.5. Adjust ISPConfig
 This step is required only if you use [ISPConfig](https://www.ispconfig.org/).
 ISPConfig does not enable PHP-FPM status page by default. 
-We will enable it by adding a custom PHP-FPM configuration template.
-This file is an original configuration file from [ISPConfig v.3.1.14p2](https://www.ispconfig.org/blog/ispconfig-3-1-14p2-released-important-security-bugfix/), it only enables the status page by adding the following line:
+We will enable it by making an override of original template of ISPConfig and add a custom directive there.
+Please, check the installation path of ISPConfig in your system.
+Below we use default paths as used in Debian 9/10.
+Please, use one of the methods below to adjust the settings of ISPConfig.
+
+**Note**: every time you upgrade the ISPConfig you may want to perform the operations below again to use the latest PHP-FPM template shipped with ISPConfig.
+
+##### 1.5.1. Method #1. Apply a patch
+**Caution**: don't use this method if you already have your own customizations of the PHP-FPM template in ISPConfig. 
+
+Apply the patch using the following command:
+
+```console
+patch /usr/local/ispconfig/server/conf/php_fpm_pool.conf.master --input=/tmp/zabbix-php-fpm-master/ispconfig/ispconfig.patch --output=/usr/local/ispconfig/server/conf-custom/php_fpm_pool.conf.master --reject-file=-
+```
+
+##### 1.5.2. Method #2. Manually adjust the template
+Use this method if any of the statements below are true:
+- the patch above does not work
+- you already have your own customizations of the PHP-FPM template in ISPConfig
+- you prefer to have a full control of what happens on your server.
+
+First we need to copy the original template file `php_fpm_pool.conf.master` of ISPConfig to the override directory (don't do that if you already have your own customizations of the PHP-FPM template in ISPConfig - in this case you should already have the required file in the required location):
+
+```console
+cp /usr/local/ispconfig/server/conf/php_fpm_pool.conf.master /usr/local/ispconfig/server/conf-custom/
+```
+
+Edit the copied file `/usr/local/ispconfig/server/conf-custom/php_fpm_pool.conf.master` and add there the following line after the last `pm` setting:
 
 ```
 pm.status_path = /php-fpm-status
 ```
-Copy the configuration file into ISPConfig custom configuration directory:
 
-```console
-cp /tmp/zabbix-php-fpm/ispconfig/php_fpm_pool.conf.master /usr/local/ispconfig/server/conf-custom/
-```
+In our version of ISPConfig the last `pm` setting is `pm.max_requests`, so the resulting part of the file will have the following contents (the new line is bold):
+
+<pre>
+&lt;tmpl_if name='pm' op='==' value='ondemand'&gt;
+pm.process_idle_timeout = &lt;tmpl_var name='pm_process_idle_timeout'&gt;s;
+&lt;/tmpl_if>
+pm.max_requests = &lt;tmpl_var name='pm_max_requests'&gt;
+<b>pm.status_path = /php-fpm-status</b>
+
+chdir = /
+&lt;tmpl_if name='php_fpm_chroot'&gt;
+</pre>
+
+##### 1.5.3. Final adjustments for ISPConfig
 
 Set correct access rights:
 
@@ -339,7 +376,7 @@ Check "Websites" only and click "Start":
 
 ![ISPConfig resync interface](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/ispconfig-resync.jpg)
 
-### 1.6 Adjust PHP-FPM pools configuration
+### 1.6. Adjust PHP-FPM pools configuration
 This step is required if you don't use ISPConfig.
 In this case you need to enable the PHP-FPM status page for all of your pools manually.
 Each pool must have the same status path, recommended value is `/php-fpm-status`.
@@ -372,7 +409,7 @@ Upload a template file from the [archive](https://github.com/rvalitov/zabbix-php
 
 #### 2.2. Add the template to your hosts
 Add template "Template App PHP-FPM" to the desired hosts.
-If you use a custom status path, then configure it in the macros section of the host by adding value:
+If you use a custom status path (the default is `/php-fpm-status`), then configure it in the macros section of the host by adding value:
 
 ```
 {$PHP_FPM_STATUS_URL}=your status path
