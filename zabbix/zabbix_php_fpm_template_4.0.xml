@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2019-12-21T12:24:20Z</date>
+    <date>2019-12-28T13:36:29Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -1372,7 +1372,7 @@
                             <url/>
                             <status>0</status>
                             <priority>4</priority>
-                            <description>Too many active connections on pool {#POOLNAME}</description>
+                            <description>Too many active connections on pool {#POOLNAME}. It means this pool is under high load. Please, make sure that your website is reachable and works as expected. For high load websites with huge amount of traffic please manually adjust this trigger to higher values. For websites with low or standard amount of visitors you may be under DDoS attack. Anyway, please, check the status of your server (CPU, memory utilization) to make sure that your server can handle this traffic and does not have performance issues.</description>
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
@@ -1388,7 +1388,7 @@
                             <url/>
                             <status>0</status>
                             <priority>2</priority>
-                            <description/>
+                            <description>PHP-FPM detected slow request on pool {#POOLNAME}. A slow request means that it took more time to execute than expected (defined in the configuration of your pool). It means that your pool has performance issues: either it is under high load, your pool has non-optimal configuration, your server has insufficient resources, or your PHP scripts have slow code (have bugs or bad programming style).</description>
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
@@ -1404,7 +1404,7 @@
                             <url/>
                             <status>0</status>
                             <priority>1</priority>
-                            <description/>
+                            <description>PHP-FPM manager changed on pool {#POOLNAME} from {ITEM.LASTVALUE} to {ITEM.VALUE}.</description>
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
@@ -1420,7 +1420,7 @@
                             <url/>
                             <status>0</status>
                             <priority>2</priority>
-                            <description/>
+                            <description>The current number of connections that have been initiated on pool {#POOLNAME}, but not yet accepted are greater than zero. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. Low values of the listen queue generally result in performance issues of this pool. High values may lead to severe errors when requests can't be processed and will be rejected generating errors such as HTTP 500.</description>
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
@@ -1436,7 +1436,7 @@
                             <url/>
                             <status>0</status>
                             <priority>3</priority>
-                            <description/>
+                            <description>PHP-FPM uses too much memory on {HOST.NAME} pool {#POOLNAME}. Please, make sure that your server has sufficient resources to handle this pool, and check that the traffic of your website is not abnormal (check that your website is not under DDoS attack).</description>
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
