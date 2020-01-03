@@ -406,6 +406,7 @@ In Zabbix frontend go to `"Configuration"->"Templates"->"Import"`:
 ![Zabbix template import interface](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/zabbix-import.jpg)
 
 Upload a template file from the [archive](https://github.com/rvalitov/zabbix-php-fpm/archive/master.zip) that corresponds to your version of Zabbix server. For example, use file `/zabbix/zabbix_php_fpm_template_4.0.xml` for Zabbix server 4.0. If there's no version of the template that matches your version of Zabbix server, then try to use the nearest version of the template that is not higher than your version of Zabbix server.
+For example, template version 4.0 also works for higher versions of Zabbix server, such as 4.2 and 4.4. But template version 4.0 will not work for Zabbix 3.x.
 
 #### 2.2. Add the template to your hosts
 Add template "Template App PHP-FPM" to the desired hosts.

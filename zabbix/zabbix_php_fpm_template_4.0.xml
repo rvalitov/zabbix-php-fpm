@@ -1411,7 +1411,7 @@
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template App PHP-FPM:php-fpm.listen_queue[{#POOLSOCKET}].diff()}=1</expression>
+                            <expression>{Template App PHP-FPM:php-fpm.listen_queue[{#POOLSOCKET}].last(#3)}&gt;0</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>PHP-FPM uses queue on {HOST.NAME} pool {#POOLNAME}</name>
