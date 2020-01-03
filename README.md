@@ -1,6 +1,6 @@
 # PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools
 
-![Zabbix version logo](https://img.shields.io/badge/Zabbix-v4.2+-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.6.x+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
+![Zabbix versions](https://img.shields.io/badge/Zabbix_versions-4.4,_4.2,_4.0-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.3.3+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
 
 ![Banner](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/repository-open-graph-template.png)
 
@@ -99,7 +99,19 @@ Displays the following data:
 
 - Max Children Reached
 - Accepted connections per second
-    
+
+## Provided Screens
+Screens are based on the graphs above:
+
+- Connections
+- Processes
+- CPU utilization
+- Memory utilization
+- Queue
+- Max children riched
+
+![Zabbix screens example](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/zabbix-screens.jpg)
+
 ## Installation
 
 ### 1. On Zabbix agents
@@ -164,7 +176,7 @@ chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 #### 1.3. Root privileges
 Automatic detection of pools requires root privileges. You can achieve it using one of the methods below.
 
-##### 1.3.1 Root privileges for Zabbix Agent
+##### 1.3.1. Method #1. Root privileges for Zabbix Agent
 This method sets root privileges for Zabbix Agent, i.e. the Zabbix Agent will run under `root` user, as a result all user scripts will also have the root access rights. 
 
 Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `AllowRoot` option and enable it:
@@ -183,7 +195,67 @@ Edit Zabbix agent configuration file `/etc/zabbix/zabbix_agentd.conf`, find `All
 AllowRoot=1
 ```
 
-##### 1.3.2 Grant privileges to the PHP-FPM auto discovery script only
+In the same file find option `User` and set it to `root`:
+
+
+```
+### Option: User
+#       Drop privileges to a specific, existing user on the system.
+#       Only has effect if run as 'root' and AllowRoot is disabled.
+#
+# Mandatory: no
+# Default:
+# User=zabbix
+User=root
+```
+
+Restart the Zabbix agent service, for example:
+
+```console
+systemctl restart zabbix-agent
+```
+
+Check that the Zabbix agent runs under `root` user:
+
+```console
+user@server:~$ ps aux | grep "zabbix_agent"
+user       3761  0.0  0.0   8132   928 pts/0    S+   18:32   0:00 grep zabbix_agent
+root      6026  0.0  0.0  86968  3472 ?        S    Dec14   0:00 /usr/sbin/zabbix_agentd -c /etc/zabbix/zabbix_agentd.conf
+root      6027  0.7  0.0  87056  5044 ?        S    Dec14  76:00 /usr/sbin/zabbix_agentd: collector [idle 1 sec]
+root      6028  0.0  0.0 161160 11092 ?        S    Dec14   7:41 /usr/sbin/zabbix_agentd: listener #1 [waiting for connection]
+root      6029  0.0  0.0 161244 11180 ?        S    Dec14   7:43 /usr/sbin/zabbix_agentd: listener #2 [waiting for connection]
+root      6030  0.0  0.0 161136 11072 ?        S    Dec14   7:43 /usr/sbin/zabbix_agentd: listener #3 [waiting for connection]
+```
+
+You should see `root` above. Otherwise, the Zabbix agent works without `root` privileges and will not be able to discover the PHP pools.
+
+Since some updates of Zabbix agent and in some OS the above changes are not enough and the following actions must be performed (as desribed in Zabbix manual for versions [4.0](https://www.zabbix.com/documentation/4.0/manual/appendix/install/run_agent_as_root), [4.4](https://www.zabbix.com/documentation/4.4/manual/appendix/install/run_agent_as_root)). 
+
+Create a directory for configuration file:
+
+```console
+mkdir /etc/systemd/system/zabbix-agent.service.d
+
+```
+
+Create file `/etc/systemd/system/zabbix-agent.service.d/override.conf` with the following content:
+
+```console
+[Service]
+User=root
+Group=root
+```
+
+Reload daemons and restart `zabbix-agent` service:
+
+```console
+systemctl daemon-reload
+systemctl restart zabbix-agent
+```
+
+Check again that the Zabbix agent runs as `root` now.
+
+##### 1.3.2. Method #2. Grant privileges to the PHP-FPM auto discovery script only
 If you don't want to run Zabbix Agent as root, then you can configure the privileges only to our script. In this case you need to have `sudo` installed:
 
 ```console
@@ -244,17 +316,54 @@ sysctl -p
 #### 1.5. Adjust ISPConfig
 This step is required only if you use [ISPConfig](https://www.ispconfig.org/).
 ISPConfig does not enable PHP-FPM status page by default. 
-We will enable it by adding a custom PHP-FPM configuration template.
-This file is an original configuration file from [ISPConfig v.3.1.14p2](https://www.ispconfig.org/blog/ispconfig-3-1-14p2-released-important-security-bugfix/), it only enables the status page by adding the following line:
+We will enable it by making an override of original template of ISPConfig and add a custom directive there.
+Please, check the installation path of ISPConfig in your system.
+Below we use default paths as used in Debian 9/10.
+Please, use one of the methods below to adjust the settings of ISPConfig.
+
+**Note**: every time you upgrade the ISPConfig you may want to perform the operations below again to use the latest PHP-FPM template shipped with ISPConfig.
+
+##### 1.5.1. Method #1. Apply a patch
+**Caution**: don't use this method if you already have your own customizations of the PHP-FPM template in ISPConfig. 
+
+Apply the patch using the following command:
+
+```console
+patch /usr/local/ispconfig/server/conf/php_fpm_pool.conf.master --input=/tmp/zabbix-php-fpm-master/ispconfig/ispconfig.patch --output=/usr/local/ispconfig/server/conf-custom/php_fpm_pool.conf.master --reject-file=-
+```
+
+##### 1.5.2. Method #2. Manually adjust the template
+Use this method if any of the statements below are true:
+- the patch above does not work
+- you already have your own customizations of the PHP-FPM template in ISPConfig
+- you prefer to have a full control of what happens on your server.
+
+First we need to copy the original template file `php_fpm_pool.conf.master` of ISPConfig to the override directory (don't do that if you already have your own customizations of the PHP-FPM template in ISPConfig - in this case you should already have the required file in the required location):
+
+```console
+cp /usr/local/ispconfig/server/conf/php_fpm_pool.conf.master /usr/local/ispconfig/server/conf-custom/
+```
+
+Edit the copied file `/usr/local/ispconfig/server/conf-custom/php_fpm_pool.conf.master` and add there the following line after the last `pm` setting:
 
 ```
 pm.status_path = /php-fpm-status
 ```
-Copy the configuration file into ISPConfig custom configuration directory:
 
-```console
-cp /tmp/zabbix-php-fpm/ispconfig/php_fpm_pool.conf.master /usr/local/ispconfig/server/conf-custom/
-```
+In our version of ISPConfig the last `pm` setting is `pm.max_requests`, so the resulting part of the file will have the following contents (the new line is bold):
+
+<pre>
+&lt;tmpl_if name='pm' op='==' value='ondemand'&gt;
+pm.process_idle_timeout = &lt;tmpl_var name='pm_process_idle_timeout'&gt;s;
+&lt;/tmpl_if>
+pm.max_requests = &lt;tmpl_var name='pm_max_requests'&gt;
+<b>pm.status_path = /php-fpm-status</b>
+
+chdir = /
+&lt;tmpl_if name='php_fpm_chroot'&gt;
+</pre>
+
+##### 1.5.3. Final adjustments for ISPConfig
 
 Set correct access rights:
 
@@ -267,7 +376,7 @@ Check "Websites" only and click "Start":
 
 ![ISPConfig resync interface](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/ispconfig-resync.jpg)
 
-### 1.6 Adjust PHP-FPM pools configuration
+### 1.6. Adjust PHP-FPM pools configuration
 This step is required if you don't use ISPConfig.
 In this case you need to enable the PHP-FPM status page for all of your pools manually.
 Each pool must have the same status path, recommended value is `/php-fpm-status`.
@@ -296,11 +405,11 @@ rm -rf /tmp/zabbix-php-fpm-master/
 In Zabbix frontend go to `"Configuration"->"Templates"->"Import"`:
 ![Zabbix template import interface](https://github.com/rvalitov/zabbix-php-fpm/raw/master/media/zabbix-import.jpg)
 
-Upload file `/zabbix/zabbix_php_fpm_template.xml` from the [archive](https://github.com/rvalitov/zabbix-php-fpm/archive/master.zip).
+Upload a template file from the [archive](https://github.com/rvalitov/zabbix-php-fpm/archive/master.zip) that corresponds to your version of Zabbix server. For example, use file `/zabbix/zabbix_php_fpm_template_4.0.xml` for Zabbix server 4.0. If there's no version of the template that matches your version of Zabbix server, then try to use the nearest version of the template that is not higher than your version of Zabbix server.
 
 #### 2.2. Add the template to your hosts
 Add template "Template App PHP-FPM" to the desired hosts.
-If you use a custom status path, then configure it in the macros section of the host by adding value:
+If you use a custom status path (the default is `/php-fpm-status`), then configure it in the macros section of the host by adding value:
 
 ```
 {$PHP_FPM_STATUS_URL}=your status path
@@ -379,7 +488,14 @@ To view the import errors, please click the "Details" section in the Zabbix GUI.
 Then check the Zabbix server log, for Debian/Ubuntu it's located at `/var/log/zabbix/zabbix_server.log`.
 
 ## Test with `zabbix_get`
-Please, use the [`zabbix_get`](https://www.zabbix.com/documentation/4.4/manual/concepts/get) utility from your Zabbix Server to test that you can get the data from the Zabbix Agent (host):
+Please, use the [`zabbix_get`](https://www.zabbix.com/documentation/4.4/manual/concepts/get) utility from your Zabbix Server to test that you can get the data from the Zabbix Agent (host).
+Please, install this utility first, because usually it's not installed automatically:
+
+```console
+apt-get install zabbix-get
+```
+
+Example how to use the utility:
 
 ```console
 zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover
@@ -392,13 +508,17 @@ In the above example we use the following values:
 - `POOL_URL` is the socket of the pool or IP and port combination, example: `/var/lib/php7.3-fpm/web1.sock` or `127.0.0.1:9000`
 - `POOL_PATH` is the status path of PHP-FPM that you set in [`pm.status_path`](https://github.com/rvalitov/zabbix-php-fpm#16-adjust-php-fpm-pools-configuration), the default value is `/php-fpm-status`.
 
-The commands above should return valid JSON data. If any error happens then it will be displayed. 
+The commands above should return valid JSON data. If any error happens then it will be displayed.
+Most common problems of testing the `php-fpm.discover` key:
+
+- The resulting JSON data is empty, but the discovery script started manually works. Then it's a problem of insufficient privileges of Zabbix agent. Please, check again section "Root privileges" of this document.
+- Error `ZBX_NOTSUPPORTED: Unsupported item key`. It means the `userparameter_php_fpm.conf` file is ignored by the Zabbix agent. Please, make sure that you copied this file to correct location and you have restarted the Zabbix agent.
 
 # Compatibility
+Should work with any version of PHP-FPM (starting with PHP 5.3.3), Zabbix 4.0.x and later.
+Can work with any version of ISPConfig as long as you have a valid PHP-FPM status page configuration there.
+
 Tested with:
 - PHP 7.3
-- Zabbix 4.2.5
+- Zabbix 4.0.16, 4.2.5, 4.4.4
 - ISPConfig v.3.1.14p2
-
-Should work with PHP 5.6.x and later, Zabbix 4.2.x and later. Currently the template does not work with Zabbix 4.0.x, see [issue](https://github.com/rvalitov/zabbix-php-fpm/issues/5).
- Not tested with other versions of Zabbix: if it works, please let me know. 

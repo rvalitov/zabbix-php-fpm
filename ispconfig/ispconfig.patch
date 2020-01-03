@@ -1,0 +1,24 @@
+From 12444b7b13a8f771549e2f9171362ae0cc252d40 Mon Sep 17 00:00:00 2001
+From: Ramil Valitov <ramilvalitov@gmail.com>
+Date: Mon, 12 Aug 2019 09:21:35 +0300
+Subject: [PATCH] [add] enable php-fpm status page
+
+---
+ ispconfig/php_fpm_pool.conf.master | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/ispconfig/php_fpm_pool.conf.master b/ispconfig/php_fpm_pool.conf.master
+index fb5c4b4..a314594 100644
+--- a/ispconfig/php_fpm_pool.conf.master
++++ b/ispconfig/php_fpm_pool.conf.master
+@@ -25,6 +25,7 @@ pm.max_spare_servers = <tmpl_var name='pm_max_spare_servers'>
+ pm.process_idle_timeout = <tmpl_var name='pm_process_idle_timeout'>s;
+ </tmpl_if>
+ pm.max_requests = <tmpl_var name='pm_max_requests'>
++pm.status_path = /php-fpm-status
+ 
+ chdir = /
+ <tmpl_if name='php_fpm_chroot'>
+-- 
+2.24.1.windows.2
+
