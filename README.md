@@ -45,11 +45,13 @@ Data is captured every minute. These timings can be adjusted in template or per 
 
 ## Provided Triggers
 
-- Too many connections on pool
-- PHP-FPM uses too much memory
-- PHP-FPM manager changed
-- PHP-FPM uses queue
-- PHP-FPM detected slow request
+|Title|Severity|Description|
+|-----|--------|-----------|
+|Too many connections on pool|High|It means this pool is under high load. Please, make sure that your website is reachable and works as expected. For high load websites with huge amount of traffic please manually adjust this trigger to higher values (default is 500 concurrent connections). For websites with low or standard amount of visitors you may be under DDoS attack. Anyway, please, check the status of your server (CPU, memory utilization) to make sure that your server can handle this traffic and does not have performance issues.|
+|PHP-FPM uses too much memory|Average|Please, make sure that your server has sufficient resources to handle this pool, and check that the traffic of your website is not abnormal (check that your website is not under DDoS attack).|
+|PHP-FPM uses queue|Warning|The current number of connections that have been initiated on pool, but not yet accepted are greater than zero. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. Low values of the listen queue generally result in performance issues of this pool. High values may lead to severe errors when requests can't be processed and will be rejected generating errors such as HTTP 500. You need to set the [backlog](https://www.php.net/manual/en/install.fpm.configuration.php#listen-backlog) option in your pool's configuration if you want to use this trigger. Otherwise the trigger will never be fired. Don't trust the default value of the `backlog` option - it may differ from what you expect and set your max queue length to zero.|
+|PHP-FPM detected slow request|Warning|PHP-FPM detected slow request on pool. A slow request means that it took more time to execute than expected (defined in the configuration of your pool). It means that your pool has performance issues: either it is under high load, your pool has non-optimal configuration, your server has insufficient resources, or your PHP scripts have slow code (have bugs or bad programming style). You need to set [request_slowlog_timeout](https://www.php.net/manual/en/install.fpm.configuration.php#request-slowlog-timeout) and [slowlog](https://www.php.net/manual/en/install.fpm.configuration.php#slowlog) options in your pool's configuration if you want to use this trigger. Otherwise the trigger will never be fired.|
+|PHP-FPM manager changed|Information|The [process manager](https://www.php.net/manual/en/install.fpm.configuration.php#pm) of PHP-FPM for this pool has changed.|
 
 ## Provided Graphs
 #### Connections
