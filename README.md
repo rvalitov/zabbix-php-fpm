@@ -496,12 +496,19 @@ Please, install this utility first, because usually it's not installed automatic
 apt-get install zabbix-get
 ```
 
-Example how to use the utility:
+Example how to discover PHP-FPM pools:
 
 ```console
-zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover
+root@server:/# zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover
+{"data":[{"{#POOLNAME}":"www","{#POOLSOCKET}":"/run/php/php7.3-fpm.sock"},{"{#POOLNAME}":"www2","{#POOLSOCKET}":"localhost:9001"}]}
+```
+
+To get status of the required pool, use the following command:
+
+```console
 zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover.status[POOL_URL,POOL_PATH]
-``` 
+```
+
 In the above example we use the following values:
 
 - `127.0.0.1` is the IP address of the host where the Zabbix Agent is installed and where the PHP-FPM is running
@@ -509,7 +516,14 @@ In the above example we use the following values:
 - `POOL_URL` is the socket of the pool or IP and port combination, example: `/var/lib/php7.3-fpm/web1.sock` or `127.0.0.1:9000`
 - `POOL_PATH` is the status path of PHP-FPM that you set in [`pm.status_path`](https://github.com/rvalitov/zabbix-php-fpm#16-adjust-php-fpm-pools-configuration), the default value is `/php-fpm-status`.
 
-The commands above should return valid JSON data. If any error happens then it will be displayed.
+Example:
+
+```console
+root@server:/# zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["localhost:9001","/php-fpm-status"]
+{"pool":"www2","process manager":"static","start time":1578093850,"start since":149,"accepted conn":3,"listen queue":0,"max listen queue":0,"listen queue len":511,"idle processes":4,"active processes":1,"total processes":5,"max active processes":1,"max children reached":0,"slow requests":0}
+```
+
+All commands should return valid JSON data. If any error happens then it will be displayed.
 Most common problems of testing the `php-fpm.discover` key:
 
 - The resulting JSON data is empty, but the discovery script started manually works. Then it's a problem of insufficient privileges of Zabbix agent. Please, check again section "Root privileges" of this document.
