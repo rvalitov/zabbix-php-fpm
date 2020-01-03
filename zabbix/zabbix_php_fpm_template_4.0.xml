@@ -1136,7 +1136,7 @@
                             <publickey/>
                             <privatekey/>
                             <port/>
-                            <description/>
+                            <description>The raw data of status page reported by PHP-FPM</description>
                             <inventory_link>0</inventory_link>
                             <applications>
                                 <application>
@@ -1260,7 +1260,7 @@
                             <publickey/>
                             <privatekey/>
                             <port/>
-                            <description/>
+                            <description>Memory used percentage by this pool relative to total memory available</description>
                             <inventory_link>0</inventory_link>
                             <applications>
                                 <application>
@@ -1324,7 +1324,7 @@
                             <publickey/>
                             <privatekey/>
                             <port/>
-                            <description/>
+                            <description>Memory used by this pool in Bytes</description>
                             <inventory_link>0</inventory_link>
                             <applications>
                                 <application>
