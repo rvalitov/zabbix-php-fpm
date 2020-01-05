@@ -89,7 +89,7 @@
                     <type>0</type>
                     <snmp_community/>
                     <snmp_oid/>
-                    <key>php-fpm.discover</key>
+                    <key>php-fpm.discover[{$PHP_FPM_STATUS_URL}]</key>
                     <delay>2m</delay>
                     <status>0</status>
                     <allowed_hosts/>
