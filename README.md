@@ -11,7 +11,7 @@
 - Supported types of PHP [process manager](https://www.php.net/manual/en/install.fpm.configuration.php#pm):
 	- [x] dynamic
 	- [x] static
-	- [ ] ondemand - has some problems, because of its working logic, see issue [#11](https://github.com/rvalitov/zabbix-php-fpm/issues/11) 
+	- [x] ondemand. Such pools are invisible (undiscoverable) if they are not active because of their nature, i.e. when no PHP-FPM processes related to the pools spawned during the discovery process of Zabbix agent. After a pool has been discovered for the first time, it becomes permanently visible for Zabbix. Regular checks performed by Zabbix agent require at least one active PHP-FPM process that can report the status, and if such process does not exist, then it will be spawned. As a result, Zabbix agent will always report that there's at least one active PHP-FPM process for the pool. Besides, there's a chance that such behaviour may have a negative impact on the pool's performance and you may consider changing to another type of process manager, for example, dynamic.   
 - Supports multiple PHP versions, i.e. you can use PHP 7.2 and PHP 7.3 on the same server and we will detect them all
 - Easy configuration
 - Supports [ISPConfig](https://www.ispconfig.org/)
@@ -281,13 +281,13 @@ Here we specified `zabbix` as the user under which the Zabbix Agent is run. This
 Now edit the file `userparameter_php_fpm.conf`. Find the line:
 
 ```
-UserParameter=php-fpm.discover,/etc/zabbix/zabbix_php_fpm_discovery.sh
+UserParameter=php-fpm.discover[*],/etc/zabbix/zabbix_php_fpm_discovery.sh $1
 ```
 
 Add `sudo` there, so the line should be:
 
 ```
-UserParameter=php-fpm.discover,sudo /etc/zabbix/zabbix_php_fpm_discovery.sh
+UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh $1
 ```
 
 That's all. 
@@ -422,10 +422,10 @@ The setup is finished, just wait a couple of minutes till Zabbix discovers all y
 
 # Testing and Troubleshooting
 ## Check auto discovery
-First test that auto discovery of PHP-FPM pools works on your machine. Run the following command:
+First test that auto discovery of PHP-FPM pools works on your machine. Run the following command (replace `POOL_PATH` with the status path of PHP-FPM that you set in [`pm.status_path`](https://github.com/rvalitov/zabbix-php-fpm#16-adjust-php-fpm-pools-configuration), the default value is `/php-fpm-status`):
 
 ```console
-root@server:/etc/zabbix#bash /etc/zabbix/zabbix_php_fpm_discovery.sh
+root@server:/etc/zabbix#bash /etc/zabbix/zabbix_php_fpm_discovery.sh POOL_PATH
 ```
 **Important:** please make sure that you use `bash` in the command above, not `sh` or other alternatives, otherwise you may get a script syntax error message.
 
@@ -452,7 +452,7 @@ The output should be a valid JSON with a list of pools and their sockets, someth
 
 For further investigation you can run the script above with `debug` option to get more details, example:
 ```console
-root@server:/etc/zabbix#bash /etc/zabbix/zabbix_php_fpm_discovery.sh debug
+root@server:/etc/zabbix#bash /etc/zabbix/zabbix_php_fpm_discovery.sh POOL_PATH debug
 Debug mode enabled
 Success: found socket /var/lib/php7.3-fpm/web1.sock for pool web1, raw process info: php-fpm7. 5094 web1 11u unix 0x00000000dd9ea858 0t0 104495372 /var/lib/php7.3-fpm/web1.sock type=STREAM
 Success: found socket /var/lib/php7.3-fpm/web4.sock for pool web4, raw process info: php-fpm7. 5096 web4 11u unix 0x00000000562748dd 0t0 104495374 /var/lib/php7.3-fpm/web4.sock type=STREAM
@@ -501,7 +501,7 @@ apt-get install zabbix-get
 Example how to discover PHP-FPM pools:
 
 ```console
-root@server:/# zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover
+root@server:/# zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover POOL_PATH
 {"data":[{"{#POOLNAME}":"www","{#POOLSOCKET}":"/run/php/php7.3-fpm.sock"},{"{#POOLNAME}":"www2","{#POOLSOCKET}":"localhost:9001"}]}
 ```
 
@@ -511,7 +511,7 @@ To get status of the required pool, use the following command:
 zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover.status[POOL_URL,POOL_PATH]
 ```
 
-In the above example we use the following values:
+In the above examples we use the following values:
 
 - `127.0.0.1` is the IP address of the host where the Zabbix Agent is installed and where the PHP-FPM is running
 - `10050` is the port of the Zabbix Agent
