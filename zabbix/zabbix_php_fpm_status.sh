@@ -35,3 +35,4 @@ QUERY_STRING=json \
 REQUEST_METHOD=GET \
 $S_FCGI -bind -connect $POOL_URL 2>/dev/null`
 echo "$PHP_STATUS" | $S_GREP "{"
+exit 0
