@@ -148,24 +148,38 @@ yum install grep gawk lsof jq fcgi
 ```
 
 #### 1.2. Install Zabbix PHP-FPM template
-Download the latest version of the template:
+First, please, download the template archive: you can use either the [latest published release](https://github.com/rvalitov/zabbix-php-fpm/releases/latest) (the latest stable version, I hope :sweat_smile:) or use the active development version (that contains all the latest features and updates).
+Below we will download the archive to a temporary directory `/tmp` that usually presents in all OS. 
+If you don't have such directory, please, create it first. 
+
+##### 1.2.1. To use stable release
+To download a stable release, run command:
+
+```console
+curl -L $(curl -s https://api.github.com/repos/rvalitov/zabbix-php-fpm/releases/latest | grep 'zipball_' | cut -d\" -f4) --output /tmp/zabbix-php-fpm.zip
+```
+
+##### 1.2.2. To use development version
+
+To download a developement version, run command:
 
 ```console
 wget https://github.com/rvalitov/zabbix-php-fpm/archive/master.zip -O /tmp/zabbix-php-fpm.zip
-``` 
-
-Unzip the archive:
+```
+##### 1.2.3. Unzip and configure
+ 
+Unzip the downloaded archive:
 
 ```console
-unzip /tmp/zabbix-php-fpm.zip -d /tmp
+unzip -j /tmp/zabbix-php-fpm.zip "*/zabbix/*" "*/ispconfig/*" -d /tmp/zabbix-php-fpm
 ```
 
 Copy the required files to the Zabbix agent configuration directory:
 
 ```console
-cp /tmp/zabbix-php-fpm-master/zabbix/userparameter_php_fpm.conf /etc/zabbix/zabbix_agentd.d/
-cp /tmp/zabbix-php-fpm-master/zabbix/zabbix_php_fpm_discovery.sh /etc/zabbix/
-cp /tmp/zabbix-php-fpm-master/zabbix/zabbix_php_fpm_status.sh /etc/zabbix/
+cp /tmp/zabbix-php-fpm/userparameter_php_fpm.conf /etc/zabbix/zabbix_agentd.d/
+cp /tmp/zabbix-php-fpm/zabbix_php_fpm_discovery.sh /etc/zabbix/
+cp /tmp/zabbix-php-fpm/zabbix_php_fpm_status.sh /etc/zabbix/
 ```
 
 Configure access rights:
@@ -331,7 +345,7 @@ Please, use one of the methods below to adjust the settings of ISPConfig.
 Apply the patch using the following command:
 
 ```console
-patch /usr/local/ispconfig/server/conf/php_fpm_pool.conf.master --input=/tmp/zabbix-php-fpm-master/ispconfig/ispconfig.patch --output=/usr/local/ispconfig/server/conf-custom/php_fpm_pool.conf.master --reject-file=-
+patch /usr/local/ispconfig/server/conf/php_fpm_pool.conf.master --input=/tmp/zabbix-php-fpm/ispconfig.patch --output=/usr/local/ispconfig/server/conf-custom/php_fpm_pool.conf.master --reject-file=-
 ```
 
 ##### 1.5.2. Method #2. Manually adjust the template
@@ -399,7 +413,7 @@ Delete temporary files:
 
 ```console
 rm /tmp/zabbix-php-fpm.zip
-rm -rf /tmp/zabbix-php-fpm-master/
+rm -rf /tmp/zabbix-php-fpm/
 ```
 
 ### 2. On Zabbix Server
