@@ -542,6 +542,13 @@ root@server:/# zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-st
 {"data":[{"{#POOLNAME}":"www","{#POOLSOCKET}":"/run/php/php7.3-fpm.sock"},{"{#POOLNAME}":"www2","{#POOLSOCKET}":"localhost:9001"}]}
 ```
 
+Most common problems of testing the `php-fpm.discover` key:
+
+- The resulting JSON data is empty, but the discovery script started manually works. Then it's a problem of insufficient privileges of Zabbix agent. Please, check again section "Root privileges" of this document.
+- Error `ZBX_NOTSUPPORTED: Unsupported item key`. It means the `userparameter_php_fpm.conf` file is ignored by the Zabbix agent. Please, make sure that you copied this file to correct location and you have restarted the Zabbix agent.
+- Error `php_fpm.cache: Permission denied` means that the script has insufficient permissions. Please, check that you granted privileges to the PHP-FPM auto discovery script or run Zabbix agent as root user. Please, check again section "Root privileges" of this document.
+- Message `Error: write permission is not granted to user USER for cache file php_fpm.cache` means that the user of Zabbix agent does not have required privileges. Please, check that you granted privileges to the PHP-FPM auto discovery script or run Zabbix agent as root user. Please, check again section "Root privileges" of this document. You may need to manually delete the `php_fpm.cache` after granting the privileges. 
+
 #### 2. Get status of required pool
 Command syntax:
 
@@ -555,11 +562,6 @@ Command output example:
 root@server:/# zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["localhost:9001","/php-fpm-status"]
 {"pool":"www2","process manager":"static","start time":1578093850,"start since":149,"accepted conn":3,"listen queue":0,"max listen queue":0,"listen queue len":511,"idle processes":4,"active processes":1,"total processes":5,"max active processes":1,"max children reached":0,"slow requests":0}
 ```
-
-Most common problems of testing the `php-fpm.discover` key:
-
-- The resulting JSON data is empty, but the discovery script started manually works. Then it's a problem of insufficient privileges of Zabbix agent. Please, check again section "Root privileges" of this document.
-- Error `ZBX_NOTSUPPORTED: Unsupported item key`. It means the `userparameter_php_fpm.conf` file is ignored by the Zabbix agent. Please, make sure that you copied this file to correct location and you have restarted the Zabbix agent.
 
 # Compatibility
 Should work with any version of PHP-FPM (starting with PHP 5.3.3), Zabbix 4.0.x and later.
