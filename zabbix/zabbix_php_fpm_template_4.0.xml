@@ -1417,22 +1417,6 @@ Homepage: https://github.com/rvalitov/zabbix-php-fpm</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template App PHP-FPM:php-fpm.listen_queue_len[{#POOLSOCKET}].last()}&lt;=0</expression>
-                            <recovery_mode>0</recovery_mode>
-                            <recovery_expression/>
-                            <name>PHP-FPM queue is not available on {HOST.NAME} pool {#POOLNAME}</name>
-                            <correlation_mode>0</correlation_mode>
-                            <correlation_tag/>
-                            <url/>
-                            <status>0</status>
-                            <priority>2</priority>
-                            <description>The queue is not available (max queue length is zero), i.e. it was not specified by the user in the pool's configuration (backlog option). As a result, some requests may be dropped or rejected. It's recommended to configure a queue for each pool.</description>
-                            <type>0</type>
-                            <manual_close>0</manual_close>
-                            <dependencies/>
-                            <tags/>
-                        </trigger_prototype>
-                        <trigger_prototype>
                             <expression>{Template App PHP-FPM:php-fpm.queue[{#POOLSOCKET}].last()}&gt;=25</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
