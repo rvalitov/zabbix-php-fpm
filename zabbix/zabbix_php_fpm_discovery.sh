@@ -15,6 +15,7 @@ S_CAT=`type -P cat`
 S_BASH=`type -P bash`
 S_ECHO=`type -P echo`
 S_PRINTF=`type -P printf`
+S_WHOAMI=`type -P whoami`
 
 if [[ ! -f $S_PS ]]; then
 	${S_ECHO} "Utility 'ps' not found. Please, install it first."
@@ -60,9 +61,14 @@ if [[ ! -f ${S_PRINTF} ]]; then
 	${S_ECHO} "Utility 'printf' not found. Please, install it first."
 	exit 1
 fi
+if [[ ! -f ${S_WHOAMI} ]]; then
+	${S_ECHO} "Utility 'whoami' not found. Please, install it first."
+	exit 1
+fi
 
 STATUS_PATH="/php-fpm-status"
 DEBUG_MODE=""
+ACTIVE_USER=`${S_WHOAMI}`
 
 # Prints a string on screen. Works only if debug mode is enabled.
 function PrintDebug(){
@@ -178,6 +184,7 @@ for ARG in "$@"; do
         PrintDebug "Argument $ARG is unknown and skipped"
     fi
 done
+PrintDebug "Current user is $ACTIVE_USER"
 PrintDebug "Status path to be used: $STATUS_PATH"
 
 LOCAL_DIR=`${S_DIRNAME} $0`
@@ -314,6 +321,11 @@ do
         EncodeToJson ${ITEM_NAME} ${ITEM_SOCKET}
     fi
 done
+
+if [[ -f ${CACHE_FILE} ]] && [[ ! -w ${CACHE_FILE} ]]; then
+    ${S_ECHO} "Error: write permission is not granted to user $ACTIVE_USER for cache file $CACHE_FILE"
+    exit 1
+fi
 
 PrintDebug "Saving new cache file $CACHE_FILE..."
 ${S_PRINTF} "%s\n" "${NEW_CACHE[@]}" > ${CACHE_FILE}
