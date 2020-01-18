@@ -31,7 +31,7 @@ We capture only useful data from host and PHP-FPM status page:
     - **CPU Average Utilization** - CPU load for all processes of the pool in % normalized by number of CPUs
     - **Listen Queue** - the number of requests in the queue of pending connections
     - **Max Listen Queue** - the maximum number of requests in the queue of pending connections since FPM has started
-    - **Listen Queue Length** - the size of the socket queue of pending connections
+    - **Listen Queue Length** - the size of the socket queue of pending connections. This value is defined by the [backlog](https://www.php.net/manual/en/install.fpm.configuration.php#listen-backlog) option in your pool's configuration. On Debian the length is always reported zero for pools that listen via socket.
     - **Queue Utilization** - queue usage in %
     - **Memory Used** - how much RAM used by the pool in bytes
     - **Memory Utilization** - how much RAM used by the pool in %
