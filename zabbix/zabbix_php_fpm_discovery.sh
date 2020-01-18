@@ -322,6 +322,11 @@ do
     fi
 done
 
+if [[ -f ${CACHE_FILE} ]] && [[ ! -w ${CACHE_FILE} ]]; then
+    ${S_ECHO} "Error: write permission is not granted to user $ACTIVE_USER for cache file $CACHE_FILE"
+    exit 1
+fi
+
 PrintDebug "Saving new cache file $CACHE_FILE..."
 ${S_PRINTF} "%s\n" "${NEW_CACHE[@]}" > ${CACHE_FILE}
 
