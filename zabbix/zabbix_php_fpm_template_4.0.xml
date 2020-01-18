@@ -11,7 +11,13 @@
         <template>
             <template>Template App PHP-FPM</template>
             <name>Template App PHP-FPM</name>
-            <description>PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools</description>
+            <description>PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools.&#13;
+- Provides auto discovery of PHP-FPM pools (LLD)&#13;
+- Detects pools that via socket and via TCP&#13;
+- Supported types of PHP process manager: dynamic, static, ondemand.&#13;
+- Supports multiple PHP versions, i.e. you can use PHP 7.2 and PHP 7.3 on the same server and we will detect them all.&#13;
+&#13;
+Homepage: https://github.com/rvalitov/zabbix-php-fpm</description>
             <groups>
                 <group>
                     <name>Templates/Applications</name>
