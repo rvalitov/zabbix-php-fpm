@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2019-12-28T13:36:29Z</date>
+    <date>2020-01-18T19:22:43Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -11,7 +11,13 @@
         <template>
             <template>Template App PHP-FPM</template>
             <name>Template App PHP-FPM</name>
-            <description>PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools</description>
+            <description>PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools.&#13;
+- Provides auto discovery of PHP-FPM pools (LLD)&#13;
+- Detects pools that via socket and via TCP&#13;
+- Supported types of PHP process manager: dynamic, static, ondemand.&#13;
+- Supports multiple PHP versions, i.e. you can use PHP 7.2 and PHP 7.3 on the same server and we will detect them all.&#13;
+&#13;
+Homepage: https://github.com/rvalitov/zabbix-php-fpm</description>
             <groups>
                 <group>
                     <name>Templates/Applications</name>
@@ -1411,16 +1417,48 @@
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template App PHP-FPM:php-fpm.listen_queue[{#POOLSOCKET}].last(#3)}&gt;0</expression>
+                            <expression>{Template App PHP-FPM:php-fpm.queue[{#POOLSOCKET}].last()}&gt;=25</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
-                            <name>PHP-FPM uses queue on {HOST.NAME} pool {#POOLNAME}</name>
+                            <name>PHP-FPM queue utilization for pool {#POOLNAME} reached 25% on {HOST.NAME}</name>
                             <correlation_mode>0</correlation_mode>
                             <correlation_tag/>
                             <url/>
                             <status>0</status>
                             <priority>2</priority>
-                            <description>The current number of connections that have been initiated on pool {#POOLNAME}, but not yet accepted are greater than zero. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. Low values of the listen queue generally result in performance issues of this pool. High values may lead to severe errors when requests can't be processed and will be rejected generating errors such as HTTP 500.</description>
+                            <description>The queue for this pool reached 25% of its maximum capacity. Items in queue represent the current number of connections that have been initiated on this pool, but not yet accepted. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. Low values of the listen queue generally result in performance issues of this pool. The queue length is defined by the backlog option in your pool's configuration.</description>
+                            <type>0</type>
+                            <manual_close>0</manual_close>
+                            <dependencies/>
+                            <tags/>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>{Template App PHP-FPM:php-fpm.queue[{#POOLSOCKET}].last()}&gt;=50</expression>
+                            <recovery_mode>0</recovery_mode>
+                            <recovery_expression/>
+                            <name>PHP-FPM queue utilization for pool {#POOLNAME} reached 50% on {HOST.NAME}</name>
+                            <correlation_mode>0</correlation_mode>
+                            <correlation_tag/>
+                            <url/>
+                            <status>0</status>
+                            <priority>3</priority>
+                            <description>The queue for this pool reached 50% of its maximum capacity. Items in queue represent the current number of connections that have been initiated on this pool, but not yet accepted. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. This pool already has performance issues. Please, check that your server has enough resources and adjust the configuration of this pool to handle more concurrent requests, otherwise you can suffer serious degraded performance. The queue length is defined by the backlog option in your pool's configuration.</description>
+                            <type>0</type>
+                            <manual_close>0</manual_close>
+                            <dependencies/>
+                            <tags/>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>{Template App PHP-FPM:php-fpm.queue[{#POOLSOCKET}].last()}&gt;=85</expression>
+                            <recovery_mode>0</recovery_mode>
+                            <recovery_expression/>
+                            <name>PHP-FPM queue utilization for pool {#POOLNAME} reached 85% on {HOST.NAME}</name>
+                            <correlation_mode>0</correlation_mode>
+                            <correlation_tag/>
+                            <url/>
+                            <status>0</status>
+                            <priority>4</priority>
+                            <description>The queue for this pool reached 85% of its maximum capacity. Items in queue represent the current number of connections that have been initiated on this pool, but not yet accepted. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. This pool already has serious performance issues. Please, check that your server has enough resources and adjust the configuration of this pool to handle more concurrent requests, otherwise you can face severe errors when new requests can't be processed and will be rejected generating errors such as HTTP 500. The queue length is defined by the backlog option in your pool's configuration.</description>
                             <type>0</type>
                             <manual_close>0</manual_close>
                             <dependencies/>
