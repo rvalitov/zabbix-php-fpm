@@ -251,7 +251,7 @@ do
                                 PrintDebug "Found socket $POOL_SOCKET"
                                 ProcessPool ${line} ${POOL_SOCKET}
                                 POOL_STATUS=$?
-                                if [[ ${POOL_STATUS} > 0 ]]; then
+                                if [[ ${POOL_STATUS} -gt 0 ]]; then
                                     FOUND_POOL="1"
                                     PrintDebug "Success: socket $POOL_SOCKET returned valid status data"
                                 else
@@ -273,7 +273,7 @@ do
                                     PrintDebug "Found TCP connection $POOL_SOCKET"
                                     ProcessPool ${line} ${POOL_SOCKET}
                                     POOL_STATUS=$?
-                                    if [[ ${POOL_STATUS} > 0 ]]; then
+                                    if [[ ${POOL_STATUS} -gt 0 ]]; then
                                         FOUND_POOL="1"
                                         PrintDebug "Success: TCP connection $POOL_SOCKET returned valid status data"
                                     else
