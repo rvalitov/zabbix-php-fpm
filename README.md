@@ -128,5 +128,5 @@ Can work with any version of ISPConfig as long as you have a valid PHP-FPM statu
 
 Tested with:
 - PHP 7.3, 7.4
-- Zabbix 4.0.16, 4.2.5, 4.4.4
+- Zabbix 4.0.4, 4.0.16, 4.2.5, 4.4.4
 - ISPConfig v.3.1.14p2
