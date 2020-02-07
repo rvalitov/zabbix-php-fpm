@@ -237,7 +237,8 @@ while IFS= read -r line; do
 
     PrintDebug "Started analysis of pool $line, PID $POOL_PID"
     #Extract only important information:
-    POOL_PARAMS_LIST=$($S_LSOF -p "$POOL_PID" 2>/dev/null | $S_GREP -w -e "unix" -e "TCP")
+    #Use -P to show port number instead of port name, see https://github.com/rvalitov/zabbix-php-fpm/issues/24
+    POOL_PARAMS_LIST=$($S_LSOF -P -p "$POOL_PID" 2>/dev/null | $S_GREP -w -e "unix" -e "TCP")
     FOUND_POOL=""
     while IFS= read -r pool; do
       if [[ -n $pool ]]; then
