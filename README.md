@@ -127,6 +127,8 @@ Should work with any version of PHP-FPM (starting with PHP 5.3.3), Zabbix 4.0.x 
 Can work with any version of ISPConfig as long as you have a valid PHP-FPM status page configuration there.
 
 Tested with:
-- PHP 7.3, 7.4
-- Zabbix 4.0.4, 4.0.16, 4.2.5, 4.4.4
+- PHP 7.2, 7.3, 7.4
+- Zabbix 4.0.4, 4.0.16, 4.0.20, 4.2.5, 4.4.4
+- Debian 9, 10
+- CentOS 7
 - ISPConfig v.3.1.14p2
