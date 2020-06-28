@@ -7,14 +7,20 @@ jobs:
       dist: bionic
       before_install:
         - freebsd-version
-      name: Ubuntu 18 bionic + Zabbix 4.5
+      name: Ubuntu 18 bionic + Zabbix 4.4
       arch: amd64
       addons:
         apt:
           sources:
-            - sourceline: 'deb https://repo.zabbix.com/zabbix/4.5/ubuntu'
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
           packages:
+            - grep
+            - gawk
+            - lsof
+            - jq
+            - libfcgi-bin
+            - unzip
             - zabbix-agent
             - zabbix-get
       before_script:
