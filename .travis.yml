@@ -13,7 +13,6 @@ jobs:
             - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
           packages:
-            - apt-transport-https
             - ca-certificates
             - curl
             - grep

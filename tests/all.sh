@@ -14,7 +14,7 @@ setupPool() {
   sudo sed -i 's#pm = dynamic#pm = static#' "$POOL_FILE"
 
   #Make copies and create new socket pools
-  MAX_POOLS=2
+  MAX_POOLS=50
   for ((c = 1; c <= MAX_POOLS; c++)); do
     POOL_NAME="socket$c"
     NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
@@ -25,7 +25,8 @@ setupPool() {
   done
 
   #Make copies and create HTTP pools
-  MAX_PORTS=2
+  MAX_PORTS=50
+  #Division on 1 is required to convert from float to integer
   START_PORT=$(echo "(9000 + $PHP_VERSION * 100)/1" | bc)
   for ((c = 1; c <= MAX_PORTS; c++)); do
     POOL_NAME="http$c"
@@ -35,7 +36,6 @@ setupPool() {
 
     sudo sed -i "s#listen =.*#listen = 127.0.0.1:$POOL_PORT#" "$NEW_POOL_FILE"
     sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
-    sudo cat "$NEW_POOL_FILE"
   done
 
   sudo service "php${PHP_VERSION}-fpm" restart
