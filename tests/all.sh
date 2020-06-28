@@ -16,11 +16,11 @@ setupPool() {
   #Make copies and create new pools
   MAX_POOLS=2
   for ((c = 1; c <= MAX_POOLS; c++)); do
-    POOL_NAME="www-$c"
+    POOL_NAME="www$c"
     NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
     sudo cp "$POOL_FILE" "$NEW_POOL_FILE"
 
-    sudo sed -i "s#listen =.*#/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock#" "$NEW_POOL_FILE"
+    sudo sed -i "s#listen =.*#listen = /run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock#" "$NEW_POOL_FILE"
     sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
     sudo cat "$NEW_POOL_FILE"
   done
@@ -56,6 +56,11 @@ oneTimeSetUp() {
 testZabbixGetInstalled() {
   ZABBIX_GET=$(type -P zabbix_get)
   assertNotNull "Utility zabbix-get not installed" "$ZABBIX_GET"
+}
+
+testPHPIsRunning() {
+  IS_OK=$(sudo ps ax | grep -F "php-fpm: pool " | grep -F -v "grep" | head -n1)
+  assertNotNull "No running PHP-FPM instances found" "$IS_OK"
 }
 
 testStatusScriptSocket() {
