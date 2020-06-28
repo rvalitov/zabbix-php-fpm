@@ -37,3 +37,5 @@ jobs:
 script: bash tests/all.sh
 notifications:
   email: false
+env:
+  - SH=bash
