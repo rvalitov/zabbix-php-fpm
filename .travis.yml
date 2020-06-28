@@ -5,8 +5,6 @@ jobs:
   include:
     - os: linux
       dist: bionic
-      before_install:
-        - freebsd-version
       name: Ubuntu 18 bionic + Zabbix 4.4
       arch: amd64
       addons:
