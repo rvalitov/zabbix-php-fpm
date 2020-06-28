@@ -13,14 +13,27 @@ setupPool() {
   #Set pool manager
   sudo sed -i 's#pm = dynamic#pm = static#' "$POOL_FILE"
 
-  #Make copies and create new pools
+  #Make copies and create new socket pools
   MAX_POOLS=2
   for ((c = 1; c <= MAX_POOLS; c++)); do
-    POOL_NAME="www$c"
+    POOL_NAME="socket$c"
     NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
     sudo cp "$POOL_FILE" "$NEW_POOL_FILE"
 
     sudo sed -i "s#listen =.*#listen = /run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock#" "$NEW_POOL_FILE"
+    sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
+  done
+
+  #Make copies and create HTTP pools
+  MAX_PORTS=2
+  START_PORT=$(echo "9000 + $PHP_VERSION * 100" | bc)
+  for ((c = 1; c <= MAX_PORTS; c++)); do
+    POOL_NAME="http$c"
+    POOL_PORT=$(echo "$START_PORT + $c" | bc)
+    NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
+    sudo cp "$POOL_FILE" "$NEW_POOL_FILE"
+
+    sudo sed -i "s#listen =.*#listen = 127.0.0.1:$POOL_PORT#" "$NEW_POOL_FILE"
     sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
   done
 
@@ -36,6 +49,12 @@ getAnySocket() {
   PHP_POOL=$(find /run/php/ -name "php${PHP_VERSION}*.sock" -type s | head -n1)
   assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
   echo "$PHP_POOL"
+}
+
+getAnyPort() {
+  PHP_PORT=$(sudo netstat -tulpn | grep -F "LISTEN" | grep -F "php-fpm" | head n-1 | awk '{print $4}' | rev | cut -d: -f1 | rev)
+  assertNotNull "Failed to get PHP port" "$PHP_PORT"
+  echo "$PHP_PORT"
 }
 
 oneTimeSetUp() {
@@ -78,13 +97,32 @@ testStatusScriptSocket() {
   PHP_POOL=$(getAnySocket)
 
   #Make the test:
-  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "{$PHP_POOL}" "/php-fpm-status")
+  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
+  IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
+  assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+}
+
+testStatusScriptPort() {
+  PHP_PORT=$(getAnyPort)
+  PHP_POOL="127.0.0.1:$PHP_PORT"
+
+  #Make the test:
+  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
 }
 
 testZabbixStatusSocket() {
   PHP_POOL=$(getAnySocket)
+
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
+  IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
+  assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+}
+
+testZabbixStatusPort() {
+  PHP_PORT=$(getAnyPort)
+  PHP_POOL="127.0.0.1:$PHP_PORT"
 
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
