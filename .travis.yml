@@ -5,6 +5,30 @@ jobs:
   include:
     - os: linux
       dist: bionic
+      name: "Zabbix 4.0 @ Ubuntu 18 bionic, PHP default"
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.0/ubuntu bionic main'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - ca-certificates
+            - curl
+            - grep
+            - sed
+            - gawk
+            - lsof
+            - jq
+            - libfcgi-bin
+            - unzip
+            - zabbix-agent
+            - zabbix-get
+            - php-fpm
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+    - os: linux
+      dist: bionic
       name: "Zabbix 4.4 @ Ubuntu 18 bionic, PHP default"
       arch: amd64
       addons:
@@ -25,6 +49,62 @@ jobs:
             - zabbix-agent
             - zabbix-get
             - php-fpm
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+    - os: linux
+      dist: bionic
+      name: "Zabbix 4.0 @ Ubuntu 18 bionic, PHP 7.0-7.4"
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - ca-certificates
+            - curl
+            - grep
+            - sed
+            - gawk
+            - lsof
+            - jq
+            - libfcgi-bin
+            - unzip
+            - zabbix-agent
+            - zabbix-get
+            - php7.0-fpm
+            - php7.1-fpm
+            - php7.2-fpm
+            - php7.3-fpm
+            - php7.4-fpm
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+    - os: linux
+      dist: bionic
+      name: "Zabbix 4.4 @ Ubuntu 18 bionic, PHP 7.0-7.4"
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - ca-certificates
+            - curl
+            - grep
+            - sed
+            - gawk
+            - lsof
+            - jq
+            - libfcgi-bin
+            - unzip
+            - zabbix-agent
+            - zabbix-get
+            - php7.0-fpm
+            - php7.1-fpm
+            - php7.2-fpm
+            - php7.3-fpm
+            - php7.4-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
 
