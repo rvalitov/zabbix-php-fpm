@@ -3,18 +3,23 @@
 #https://github.com/rvalitov/zabbix-php-fpm
 #This script is used for testing
 
+MAX_POOLS=3
+MAX_PORTS=3
+
 setupPool() {
   POOL_FILE=$1
   POOL_DIR=$(dirname "${POOL_FILE}")
   PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
 
+  #Delete all active pools except www.conf:
+  find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
+
   #Add status path
-  echo 'pm.status_path = /php-fpm-status' | sudo tee -a "$POOL_FILE"
+  sudo sed -i 's#;pm.status_path.*#pm.status_path = /php-fpm-status#' "$POOL_FILE"
   #Set pool manager
   sudo sed -i 's#pm = dynamic#pm = static#' "$POOL_FILE"
 
   #Make copies and create new socket pools
-  MAX_POOLS=50
   for ((c = 1; c <= MAX_POOLS; c++)); do
     POOL_NAME="socket$c"
     NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
@@ -25,7 +30,6 @@ setupPool() {
   done
 
   #Make copies and create HTTP pools
-  MAX_PORTS=50
   #Division on 1 is required to convert from float to integer
   START_PORT=$(echo "(9000 + $PHP_VERSION * 100)/1" | bc)
   for ((c = 1; c <= MAX_PORTS; c++)); do
@@ -39,6 +43,15 @@ setupPool() {
   done
 
   sudo service "php${PHP_VERSION}-fpm" restart
+}
+
+setupPools() {
+  PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
+  while IFS= read -r pool; do
+    if [[ -n $pool ]]; then
+      setupPool "$pool"
+    fi
+  done <<<"$PHP_LIST"
 }
 
 getAnySocket() {
@@ -74,12 +87,7 @@ oneTimeSetUp() {
   echo "Setup PHP-FPM..."
 
   #Setup PHP-FPM pools:
-  PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
-  while IFS= read -r pool; do
-    if [[ -n $pool ]]; then
-      setupPool "$pool"
-    fi
-  done <<<"$PHP_LIST"
+  setupPools
 
   echo "All done, starting tests..."
 }
