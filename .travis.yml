@@ -12,8 +12,13 @@ jobs:
           sources:
             - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+            - sourceline: 'ppa:ondrej/php'
           packages:
+            - apt-transport-https
+            - ca-certificates
+            - curl
             - grep
+            - sed
             - gawk
             - lsof
             - jq
@@ -21,6 +26,11 @@ jobs:
             - unzip
             - zabbix-agent
             - zabbix-get
+            - php7.4-fpm
+            - php7.3-fpm
+            - php7.2-fpm
+            - php7.1-fpm
+            - php7.0-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
 
