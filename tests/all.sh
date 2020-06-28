@@ -149,6 +149,13 @@ testDiscoverScriptReturnsData() {
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
 }
 
+testDiscoverScriptDebug() {
+  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "/php-fpm-status")
+  ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
+  assertNull "Discover script errors: $ERRORS_LIST" "$ERRORS_LIST"
+
+}
+
 testZabbixDiscoverReturnsData() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
