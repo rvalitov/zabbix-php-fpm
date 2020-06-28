@@ -1,6 +1,6 @@
 # PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools
 
-![Zabbix versions](https://img.shields.io/badge/Zabbix_versions-4.4,_4.2,_4.0-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.3.3+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat)
+![Zabbix versions](https://img.shields.io/badge/Zabbix_versions-4.4,_4.2,_4.0-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.3.3+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat) [![Build Status](https://travis-ci.com/rvalitov/zabbix-php-fpm.svg?branch=master)](https://travis-ci.com/rvalitov/zabbix-php-fpm)
 
 ![Banner](https://github.com/rvalitov/zabbix-php-fpm/wiki/media/repository-open-graph-template.png)
 
@@ -112,7 +112,7 @@ Screens are based on the graphs above:
 - CPU utilization
 - Memory utilization
 - Queue
-- Max children riched
+- Max children reached
 
 ![Zabbix screens example](https://github.com/rvalitov/zabbix-php-fpm/wiki/media/zabbix-screens.jpg)
 
@@ -127,8 +127,10 @@ Should work with any version of PHP-FPM (starting with PHP 5.3.3), Zabbix 4.0.x 
 Can work with any version of ISPConfig as long as you have a valid PHP-FPM status page configuration there.
 
 Tested with:
+- [Travis CI](https://travis-ci.com/rvalitov/zabbix-php-fpm)
 - PHP 7.2, 7.3, 7.4
 - Zabbix 4.0.4, 4.0.16, 4.0.20, 4.2.5, 4.4.4
 - Debian 9, 10
+- Ubuntu 18
 - CentOS 7
 - ISPConfig v.3.1.14p2
