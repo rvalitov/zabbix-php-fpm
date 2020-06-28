@@ -133,6 +133,7 @@ function ProcessPool() {
   POOL_NAME=$1
   POOL_SOCKET=$2
   if [[ -z ${POOL_NAME} ]] || [[ -z ${POOL_SOCKET} ]]; then
+    PrintDebug "Invalid arguments for ProcessPool"
     return 0
   fi
 
