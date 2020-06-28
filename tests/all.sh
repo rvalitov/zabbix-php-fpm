@@ -69,13 +69,13 @@ testStatusScriptSocket() {
   assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
   PHP_VERSION=$(echo "$PHP_FIRST" | grep -oP "(\d\.\d)")
   assertNotNull "Failed to get PHP version" "$PHP_VERSION"
-  PHP_FIRST=$(find /run/php/ -name "php${PHP_VERSION}*.sock" -type s | head -n1)
-  assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_FIRST"
+  PHP_POOL=$(find /run/php/ -name "php${PHP_VERSION}*.sock" -type s | head -n1)
+  assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
 
   #Make the test:
-  DATA=$(bash "/etc/zabbix/zabbix_php_fpm_status.sh" "{$PHP_FIRST}" "/php-fpm-status")
+  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "{$PHP_POOL}" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
-  assertNotNull "Failed to get status from pool: $DATA" "$IS_OK"
+  assertNotNull "Failed to get status from pool {$PHP_POOL}: $DATA" "$IS_OK"
 }
 
 testDiscoverScriptReturnsData() {

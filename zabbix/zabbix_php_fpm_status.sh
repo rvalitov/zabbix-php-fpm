@@ -5,7 +5,6 @@
 
 S_FCGI=$(type -P cgi-fcgi)
 S_GREP=$(type -P grep)
-S_ECHO=$(type -P echo)
 
 if [[ ! -f $S_FCGI ]]; then
   echo "Utility 'cgi-fcgi' not found. Please, install it first."
@@ -37,5 +36,5 @@ PHP_STATUS=$(
   REQUEST_METHOD=GET \
   $S_FCGI -bind -connect "$POOL_URL" 2>/dev/null
 )
-$S_ECHO "$PHP_STATUS" | $S_GREP "{"
+echo "$PHP_STATUS" | $S_GREP "{"
 exit 0
