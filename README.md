@@ -112,7 +112,7 @@ Screens are based on the graphs above:
 - CPU utilization
 - Memory utilization
 - Queue
-- Max children riched
+- Max children reached
 
 ![Zabbix screens example](https://github.com/rvalitov/zabbix-php-fpm/wiki/media/zabbix-screens.jpg)
 
