@@ -3,6 +3,44 @@
 #https://github.com/rvalitov/zabbix-php-fpm
 #This script scans local machine for active PHP-FPM pools and returns them as a list in JSON format
 
+#This parameter is used to limit the execution time of this script. Zabbix allows us to run maximum of 3 seconds, so
+#we need to stop and save our state in case we need more time to run. This parameter sets the maximum number of
+#seconds that the script is allowed to run. After this duration is reached, the script will stop running and save its
+#state. So, the actual execution time will be slightly more than this parameter.
+#We put value 2 here, because we can use only integers.
+MAX_EXECUTION_TIME=2
+
+#Reset the seconds variable
+SECONDS=0
+
+#Status path used in calls to PHP-FPM
+STATUS_PATH="/php-fpm-status"
+
+#Debug mode is disabled by default
+DEBUG_MODE=""
+
+#Local directory
+LOCAL_DIR=$(${S_DIRNAME} "$0")
+
+#Cache file for ondemand pools
+#File format:
+#<pool name> <socket or TCP>
+ONDEMAND_CACHE_FILE="$LOCAL_DIR/php_fpm_ondemand.cache"
+
+#Cache file for pending pools, used to store execution state
+#File format:
+#<pool name>
+PENDING_FILE="$LOCAL_DIR/php_fpm_pending.cache"
+
+#Cache file with list of active pools, used to store execution state
+#File format:
+#<pool name> <socket or TCP>
+RESULTS_CACHE_FILE="$LOCAL_DIR/php_fpm_results.cache"
+
+#Path to status script, another script of this bundle
+STATUS_SCRIPT="$LOCAL_DIR/zabbix_php_fpm_status.sh"
+
+#Checking all the required executables
 S_PS=$(type -P ps)
 S_GREP=$(type -P grep)
 S_AWK=$(type -P awk)
@@ -66,8 +104,6 @@ if [[ ! -f ${S_WHOAMI} ]]; then
   exit 1
 fi
 
-STATUS_PATH="/php-fpm-status"
-DEBUG_MODE=""
 ACTIVE_USER=$(${S_WHOAMI})
 
 # Prints a string on screen. Works only if debug mode is enabled.
@@ -120,6 +156,15 @@ function IsInCache() {
     fi
   done
   return 0
+}
+
+function CheckExecutionTime() {
+  if [[ $SECONDS -lt $MAX_EXECUTION_TIME ]]; then
+    #All good, we can continue
+    return 1;
+  fi
+
+  #We need to save our state and exit
 }
 
 # Validates the specified pool by getting its status and working with cache.
@@ -188,9 +233,6 @@ done
 PrintDebug "Current user is $ACTIVE_USER"
 PrintDebug "Status path to be used: $STATUS_PATH"
 
-LOCAL_DIR=$(${S_DIRNAME} "$0")
-CACHE_FILE="$LOCAL_DIR/php_fpm.cache"
-STATUS_SCRIPT="$LOCAL_DIR/zabbix_php_fpm_status.sh"
 PrintDebug "Local directory is $LOCAL_DIR"
 if [[ ! -f ${STATUS_SCRIPT} ]]; then
   ${S_ECHO} "Helper script $STATUS_SCRIPT not found"
@@ -206,11 +248,20 @@ PrintDebug "Helper script $STATUS_SCRIPT is reachable"
 # The cache file consists of lines, each line contains pool name, then space, then socket (or TCP info)
 CACHE=()
 NEW_CACHE=()
-if [[ -r ${CACHE_FILE} ]]; then
-  PrintDebug "Reading cache file $CACHE_FILE..."
-  mapfile -t CACHE < <(${S_CAT} "${CACHE_FILE}")
+if [[ -r ${ONDEMAND_CACHE_FILE} ]]; then
+  PrintDebug "Reading cache file of ondemand pools $ONDEMAND_CACHE_FILE..."
+  mapfile -t CACHE < <(${S_CAT} "${ONDEMAND_CACHE_FILE}")
 else
-  PrintDebug "Cache file $CACHE_FILE not found, skipping..."
+  PrintDebug "Cache file of ondemand pools $ONDEMAND_CACHE_FILE not found, skipping..."
+fi
+
+#Loading pending tasks
+PENDING_LIST=()
+if [[ -r $PENDING_FILE ]]; then
+  PrintDebug "Reading file of pending pools ${PENDING_FILE}..."
+  mapfile -t PENDING_LIST < <(${S_CAT} "${PENDING_FILE}")
+else
+  PrintDebug "List of pending pools ${PENDING_FILE} not found, skipping..."
 fi
 
 mapfile -t PS_LIST < <($S_PS ax | $S_GREP -F "php-fpm: pool " | $S_GREP -F -v "grep")
@@ -328,13 +379,13 @@ for CACHE_ITEM in "${CACHE[@]}"; do
   fi
 done
 
-if [[ -f ${CACHE_FILE} ]] && [[ ! -w ${CACHE_FILE} ]]; then
-  ${S_ECHO} "Error: write permission is not granted to user $ACTIVE_USER for cache file $CACHE_FILE"
+if [[ -f ${ONDEMAND_CACHE_FILE} ]] && [[ ! -w ${ONDEMAND_CACHE_FILE} ]]; then
+  ${S_ECHO} "Error: write permission is not granted to user $ACTIVE_USER for cache file $ONDEMAND_CACHE_FILE"
   exit 1
 fi
 
-PrintDebug "Saving new cache file $CACHE_FILE..."
-${S_PRINTF} "%s\n" "${NEW_CACHE[@]}" >"${CACHE_FILE}"
+PrintDebug "Saving new cache file $ONDEMAND_CACHE_FILE..."
+${S_PRINTF} "%s\n" "${NEW_CACHE[@]}" >"${ONDEMAND_CACHE_FILE}"
 
 RESULT_DATA="$RESULT_DATA]}"
 PrintDebug "Resulting JSON data for Zabbix:"
