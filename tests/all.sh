@@ -22,6 +22,7 @@ setupPool() {
 
     sudo sed -i "s#listen =.*#/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock#" "$NEW_POOL_FILE"
     sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
+    sudo cat "$NEW_POOL_FILE"
   done
 
   sudo service "php${PHP_VERSION}-fpm" restart
