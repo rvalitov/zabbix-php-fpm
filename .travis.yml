@@ -5,7 +5,7 @@ jobs:
   include:
     - os: linux
       dist: bionic
-      name: Ubuntu 18 bionic + Zabbix 4.4
+      name: "Zabbix 4.4 @ Ubuntu 18 bionic, PHP default"
       arch: amd64
       addons:
         apt:
@@ -26,11 +26,7 @@ jobs:
             - unzip
             - zabbix-agent
             - zabbix-get
-            - php7.4-fpm
-            - php7.3-fpm
-            - php7.2-fpm
-            - php7.1-fpm
-            - php7.0-fpm
+            - php-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
 

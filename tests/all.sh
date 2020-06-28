@@ -29,9 +29,9 @@ setupPool() {
 
 oneTimeSetUp() {
   #Install files:
-  sudo cp "{$TRAVIS_BUILD_DIR}/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
-  sudo cp "{$TRAVIS_BUILD_DIR}/zabbix/zabbix_php_fpm_status.sh" "/etc/zabbix"
-  sudo cp "{$TRAVIS_BUILD_DIR}/zabbix/userparameter_php_fpm.conf" "$(find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_status.sh" "/etc/zabbix"
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 
