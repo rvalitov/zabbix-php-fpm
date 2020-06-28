@@ -53,7 +53,7 @@ getAnySocket() {
 }
 
 getAnyPort() {
-  PHP_PORT=$(sudo netstat -tulpn | grep -F "LISTEN" | grep -F "php-fpm" | head n-1 | awk '{print $4}' | rev | cut -d: -f1 | rev)
+  PHP_PORT=$(sudo netstat -tulpn | grep -F "LISTEN" | grep -F "php-fpm" | head -n1 | awk '{print $4}' | rev | cut -d: -f1 | rev)
   assertNotNull "Failed to get PHP port" "$PHP_PORT"
   echo "$PHP_PORT"
 }
