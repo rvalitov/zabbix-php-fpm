@@ -28,6 +28,17 @@ setupPool() {
   sudo service "php${PHP_VERSION}-fpm" restart
 }
 
+getAnySocket() {
+  #Get any socket of PHP-FPM:
+  PHP_FIRST=$(find /etc/php/ -name 'www.conf' -type f | head -n1)
+  assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
+  PHP_VERSION=$(echo "$PHP_FIRST" | grep -oP "(\d\.\d)")
+  assertNotNull "Failed to get PHP version" "$PHP_VERSION"
+  PHP_POOL=$(find /run/php/ -name "php${PHP_VERSION}*.sock" -type s | head -n1)
+  assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
+  echo "$PHP_POOL"
+}
+
 oneTimeSetUp() {
   echo "Copying Zabbix files..."
   #Install files:
@@ -64,13 +75,7 @@ testPHPIsRunning() {
 }
 
 testStatusScriptSocket() {
-  #Get any socket of PHP-FPM:
-  PHP_FIRST=$(find /etc/php/ -name 'www.conf' -type f | head -n1)
-  assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
-  PHP_VERSION=$(echo "$PHP_FIRST" | grep -oP "(\d\.\d)")
-  assertNotNull "Failed to get PHP version" "$PHP_VERSION"
-  PHP_POOL=$(find /run/php/ -name "php${PHP_VERSION}*.sock" -type s | head -n1)
-  assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
+  PHP_POOL=$(getAnySocket)
 
   #Make the test:
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "{$PHP_POOL}" "/php-fpm-status")
@@ -82,6 +87,14 @@ testDiscoverScriptReturnsData() {
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
+}
+
+testZabbixStatusSocket() {
+  PHP_POOL=$(getAnySocket)
+
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
+  IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
+  assertNotNull "Failed to get status from pool {$PHP_POOL}: $DATA" "$IS_OK"
 }
 
 # Load shUnit2.
