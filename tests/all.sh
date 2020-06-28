@@ -22,7 +22,6 @@ setupPool() {
 
     sudo sed -i "s#listen =.*#listen = /run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock#" "$NEW_POOL_FILE"
     sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
-    sudo cat "$NEW_POOL_FILE"
   done
 
   sudo service "php${PHP_VERSION}-fpm" restart
@@ -49,7 +48,8 @@ oneTimeSetUp() {
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 
   #Configure Zabbix:
-  echo 'zabbix ALL=NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh' | sudo EDITOR='tee -a' visudo
+  echo 'zabbix ALL=NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh,/etc/zabbix/zabbix_php_fpm_status.sh' | sudo EDITOR='tee -a' visudo
+  sudo service zabbix-agent restart
 
   echo "Setup PHP-FPM..."
 
@@ -80,13 +80,7 @@ testStatusScriptSocket() {
   #Make the test:
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "{$PHP_POOL}" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
-  assertNotNull "Failed to get status from pool {$PHP_POOL}: $DATA" "$IS_OK"
-}
-
-testDiscoverScriptReturnsData() {
-  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
-  IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
-  assertNotNull "Discover script failed: $DATA" "$IS_OK"
+  assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
 }
 
 testZabbixStatusSocket() {
@@ -94,7 +88,13 @@ testZabbixStatusSocket() {
 
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
-  assertNotNull "Failed to get status from pool {$PHP_POOL}: $DATA" "$IS_OK"
+  assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+}
+
+testDiscoverScriptReturnsData() {
+  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
+  IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
+  assertNotNull "Discover script failed: $DATA" "$IS_OK"
 }
 
 # Load shUnit2.
