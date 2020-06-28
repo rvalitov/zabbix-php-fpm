@@ -33,8 +33,9 @@ setupPool() {
     NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
     sudo cp "$POOL_FILE" "$NEW_POOL_FILE"
 
-    sudo sed -i "s#listen =.*#listen = 127.0.0.1:$POOL_PORT#" "$NEW_POOL_FILE"
+    sudo sed -i "s#listen =.*#listen = $POOL_PORT#" "$NEW_POOL_FILE"
     sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
+    sudo cat "$NEW_POOL_FILE"
   done
 
   sudo service "php${PHP_VERSION}-fpm" restart
