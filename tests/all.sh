@@ -54,6 +54,11 @@ setupPools() {
   done <<<"$PHP_LIST"
 }
 
+getNumberOfPHPVersions() {
+  PHP_COUNT=$(find /etc/php/ -name 'www.conf' -type f | wc -l)
+  echo "$PHP_COUNT"
+}
+
 getAnySocket() {
   #Get any socket of PHP-FPM:
   PHP_FIRST=$(find /etc/php/ -name 'www.conf' -type f | head -n1)
@@ -148,6 +153,22 @@ testZabbixDiscoverReturnsData() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
+}
+
+testZabbixDiscoverSimilarSocketPoolNames() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"socket1",' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  POOLS=$(echo "($PHP_COUNT * $MAX_POOLS)/1" | bc)
+  assertEquals "Found $NUMBER_OF_POOLS pools instead of $POOLS" "$NUMBER_OF_POOLS" "$POOLS"
+}
+
+testZabbixDiscoverSimilarHttpPoolNames() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"http1",' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  POOLS=$(echo "($PHP_COUNT * $MAX_POOLS)/1" | bc)
+  assertEquals "Found $NUMBER_OF_POOLS pools instead of $POOLS" "$NUMBER_OF_POOLS" "$POOLS"
 }
 
 # Load shUnit2.
