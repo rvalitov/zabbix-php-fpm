@@ -14,7 +14,7 @@ setupPool() {
   sudo sed -i 's#pm = dynamic#pm = static#' "$POOL_FILE"
 
   #Make copies and create new pools
-  MAX_POOLS=10
+  MAX_POOLS=2
   for ((c = 1; c <= MAX_POOLS; c++)); do
     POOL_NAME="www-$c"
     NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
@@ -22,12 +22,14 @@ setupPool() {
 
     sudo sed -i "s#listen =.*#/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock#" "$NEW_POOL_FILE"
     sudo sed -i "s#[www]#[$POOL_NAME]#" "$NEW_POOL_FILE"
+    sudo cat "$NEW_POOL_FILE"
   done
 
   sudo service "php${PHP_VERSION}-fpm" restart
 }
 
 oneTimeSetUp() {
+  echo "Copying Zabbix files..."
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_status.sh" "/etc/zabbix"
@@ -38,6 +40,8 @@ oneTimeSetUp() {
   #Configure Zabbix:
   echo 'zabbix ALL=NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh' | sudo EDITOR='tee -a' visudo
 
+  echo "Setup PHP-FPM..."
+
   #Setup PHP-FPM pools:
   PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
   while IFS= read -r pool; do
@@ -45,6 +49,8 @@ oneTimeSetUp() {
       setupPool "$pool"
     fi
   done <<<"$PHP_LIST"
+
+  echo "All done, starting tests..."
 }
 
 testZabbixGetInstalled() {
