@@ -26,14 +26,14 @@ setupPool() {
 
   #Make copies and create HTTP pools
   MAX_PORTS=2
-  START_PORT=$(echo "9000 + $PHP_VERSION * 100" | bc)
+  START_PORT=$(echo "(9000 + $PHP_VERSION * 100)/1" | bc)
   for ((c = 1; c <= MAX_PORTS; c++)); do
     POOL_NAME="http$c"
-    POOL_PORT=$(echo "$START_PORT + $c" | bc)
+    POOL_PORT=$(echo "($START_PORT + $c)/1" | bc)
     NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
     sudo cp "$POOL_FILE" "$NEW_POOL_FILE"
 
-    sudo sed -i "s#listen =.*#listen = $POOL_PORT#" "$NEW_POOL_FILE"
+    sudo sed -i "s#listen =.*#listen = 127.0.0.1:$POOL_PORT#" "$NEW_POOL_FILE"
     sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
     sudo cat "$NEW_POOL_FILE"
   done
