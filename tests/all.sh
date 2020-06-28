@@ -136,5 +136,11 @@ testDiscoverScriptReturnsData() {
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
 }
 
+testZabbixDiscoverReturnsData() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
+  assertNotNull "Discover script failed: $DATA" "$IS_OK"
+}
+
 # Load shUnit2.
 . shunit2
