@@ -1,0 +1,25 @@
+---
+language: bash
+
+jobs:
+  include:
+    - os: linux
+      dist: bionic
+      before_install:
+        - freebsd-version
+      name: Ubuntu 18 bionic + Zabbix 4.5
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://repo.zabbix.com/zabbix/4.5/ubuntu'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - zabbix-agent
+            - zabbix-get
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+
+script: bash tests/all.sh
+notifications:
+  email: false
