@@ -60,6 +60,7 @@ jobs:
           sources:
             - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+            - sourceline: 'ppa:ondrej/php'
           packages:
             - ca-certificates
             - curl
@@ -88,6 +89,7 @@ jobs:
           sources:
             - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+            - sourceline: 'ppa:ondrej/php'
           packages:
             - ca-certificates
             - curl
