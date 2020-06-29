@@ -251,10 +251,11 @@ while IFS= read -r line; do
     PrintDebug "Started analysis of pool $line, PID(s): $POOL_PID_ARGS"
     #Extract only important information:
     #Use -P to show port number instead of port name, see https://github.com/rvalitov/zabbix-php-fpm/issues/24
+    #Use -n flag to show IP address and not convert it to domain name (like localhost)
     #Sometimes different PHP-FPM versions may have the same names of pools, so we need to consider that.
     # It's considered that a pair of pool name and socket must be unique.
     #Sorting is required, because uniq needs it
-    POOL_PARAMS_LIST=$($S_LSOF -P $POOL_PID_ARGS 2>/dev/null | $S_GREP -w -e "unix" -e "TCP" | $S_SORT -u | $S_UNIQ -f8)
+    POOL_PARAMS_LIST=$($S_LSOF -n -P $POOL_PID_ARGS 2>/dev/null | $S_GREP -w -e "unix" -e "TCP" | $S_SORT -u | $S_UNIQ -f8)
     FOUND_POOL=""
     while IFS= read -r pool; do
       if [[ -n $pool ]]; then
