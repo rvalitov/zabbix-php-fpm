@@ -34,7 +34,7 @@ setupPool() {
   PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
 
   #Delete all active pools except www.conf:
-  find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
+  sudo find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
 
   #Add status path
   sudo sed -i 's#;pm.status_path.*#pm.status_path = /php-fpm-status#' "$POOL_FILE"
