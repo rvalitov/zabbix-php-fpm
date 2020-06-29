@@ -163,7 +163,6 @@ function ProcessPool() {
     fi
 
     PrintDebug "Failed to validate status data for pool $POOL_NAME, socket $POOL_SOCKET, status path $STATUS_PATH"
-    PrintDebug "Status script returned: $STATUS_JSON"
     if [[ -n ${STATUS_JSON} ]]; then
       PrintDebug "Status script returned: $STATUS_JSON"
     fi
