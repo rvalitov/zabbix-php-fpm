@@ -212,5 +212,15 @@ testZabbixDiscoverNumberOfPortPools() {
   assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
 }
 
+#This test should be last
+testZabbixDiscoverTimeout() {
+  #Create lots of pools
+  MAX_POOLS=100
+  MAX_PORTS=100
+  setupPools
+
+  testZabbixDiscoverReturnsData
+}
+
 # Load shUnit2.
 . shunit2
