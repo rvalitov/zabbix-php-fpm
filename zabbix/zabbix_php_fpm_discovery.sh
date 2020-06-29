@@ -292,7 +292,7 @@ while IFS= read -r line; do
                 #Check and replace * to localhost if it's found. Asterisk means that the PHP listens on
                 #all interfaces.
                 PrintDebug "Found TCP connection $POOL_SOCKET"
-                POOL_SOCKET=${POOL_SOCKET//*:/localhost:}
+                POOL_SOCKET=${POOL_SOCKET/\*:/localhost:}
                 PrintDebug "Processed TCP connection $POOL_SOCKET"
                 ProcessPool "${line}" "${POOL_SOCKET}"
                 POOL_STATUS=$?
