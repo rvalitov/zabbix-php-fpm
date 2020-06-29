@@ -98,6 +98,11 @@ getAnyPort() {
 }
 
 oneTimeSetUp() {
+  echo "Host info:"
+  nslookup localhost
+  sudo ifconfig
+  sudo cat /etc/hosts
+
   echo "Copying Zabbix files..."
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
