@@ -82,7 +82,7 @@ jobs:
       addons:
         apt:
           sources:
-            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.0/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
             - sourceline: 'ppa:ondrej/php'
           packages:
