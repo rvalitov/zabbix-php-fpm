@@ -89,6 +89,20 @@ testZabbixGetInstalled() {
   assertNotNull "Utility zabbix-get not installed" "$ZABBIX_GET"
 }
 
+testZabbixAgentVersion() {
+  #Example: 4.4
+  REQUESTED_VERSION=$($TRAVIS_JOB_NAME | grep -F "Zabbix" | head -n1 | cut -d "@" -f1 | cut -d " " -f2)
+  INSTALLED_VERSION=$(zabbix_agentd -V | grep -F "zabbix" | head -n1 | rev | cut -d " " -f1 | rev | cut -d "." -f1,2)
+  assertSame "Requested version $REQUESTED_VERSION and installed version $INSTALLED_VERSION of Zabbix agent do not match" "$REQUESTED_VERSION" "$INSTALLED_VERSION"
+}
+
+testZabbixGetVersion() {
+  #Example: 4.4
+  REQUESTED_VERSION=$($TRAVIS_JOB_NAME | grep -F "Zabbix" | head -n1 | cut -d "@" -f1 | cut -d " " -f2)
+  INSTALLED_VERSION=$(zabbix_get -V | grep -F "zabbix" | head -n1 | rev | cut -d " " -f1 | rev | cut -d "." -f1,2)
+  assertSame "Requested version $REQUESTED_VERSION and installed version $INSTALLED_VERSION of zabbix_get do not match" "$REQUESTED_VERSION" "$INSTALLED_VERSION"
+}
+
 testPHPIsRunning() {
   IS_OK=$(sudo ps ax | grep -F "php-fpm: pool " | grep -F -v "grep" | head -n1)
   assertNotNull "No running PHP-FPM instances found" "$IS_OK"
