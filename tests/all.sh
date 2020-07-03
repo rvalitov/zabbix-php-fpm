@@ -98,11 +98,11 @@ getAnyPort() {
 }
 
 oneTimeSetUp() {
+  echo "Started job $TRAVIS_JOB_NAME"
   echo "Host info:"
   nslookup localhost
   sudo ifconfig
   sudo cat /etc/hosts
-
   echo "Copying Zabbix files..."
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
@@ -126,6 +126,20 @@ oneTimeSetUp() {
 testZabbixGetInstalled() {
   ZABBIX_GET=$(type -P zabbix_get)
   assertNotNull "Utility zabbix-get not installed" "$ZABBIX_GET"
+}
+
+testZabbixAgentVersion() {
+  #Example: 4.4
+  REQUESTED_VERSION=$(echo "$TRAVIS_JOB_NAME" | grep -i -F "zabbix" | head -n1 | cut -d "@" -f1 | cut -d " " -f2)
+  INSTALLED_VERSION=$(zabbix_agentd -V | grep -F "zabbix" | head -n1 | rev | cut -d " " -f1 | rev | cut -d "." -f1,2)
+  assertSame "Requested version $REQUESTED_VERSION and installed version $INSTALLED_VERSION of Zabbix agent do not match" "$REQUESTED_VERSION" "$INSTALLED_VERSION"
+}
+
+testZabbixGetVersion() {
+  #Example: 4.4
+  REQUESTED_VERSION=$(echo "$TRAVIS_JOB_NAME" | grep -i -F "zabbix" | head -n1 | cut -d "@" -f1 | cut -d " " -f2)
+  INSTALLED_VERSION=$(zabbix_get -V | grep -F "zabbix" | head -n1 | rev | cut -d " " -f1 | rev | cut -d "." -f1,2)
+  assertSame "Requested version $REQUESTED_VERSION and installed version $INSTALLED_VERSION of zabbix_get do not match" "$REQUESTED_VERSION" "$INSTALLED_VERSION"
 }
 
 testPHPIsRunning() {
