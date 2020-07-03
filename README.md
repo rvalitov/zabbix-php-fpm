@@ -1,6 +1,6 @@
 # PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools
 
-![Zabbix versions](https://img.shields.io/badge/Zabbix_versions-5.0,_4.4,_4.2,_4.0-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.3.3+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat) [![Build Status](https://travis-ci.com/rvalitov/zabbix-php-fpm.svg?branch=master)](https://travis-ci.com/rvalitov/zabbix-php-fpm)
+![Zabbix versions](https://img.shields.io/badge/Zabbix_versions-5.0,_4.4,_4.2,_4.0-green.svg?style=flat) ![PHP](https://img.shields.io/badge/PHP-5.3.3+-blue.svg?style=flat) ![PHP7](https://img.shields.io/badge/PHP7-supported-green.svg?style=flat) ![LLD](https://img.shields.io/badge/LLD-yes-green.svg?style=flat) ![ISPConfig](https://img.shields.io/badge/ISPConfig-supported-green.svg?style=flat) [![Build Status](https://travis-ci.com/rvalitov/zabbix-php-fpm.svg?branch=master)](https://travis-ci.com/rvalitov/zabbix-php-fpm) [![CodeFactor](https://www.codefactor.io/repository/github/rvalitov/zabbix-php-fpm/badge)](https://www.codefactor.io/repository/github/rvalitov/zabbix-php-fpm)
 
 ![Banner](https://github.com/rvalitov/zabbix-php-fpm/wiki/media/repository-open-graph-template.png)
 
