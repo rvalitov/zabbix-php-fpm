@@ -1,0 +1,34 @@
+# Configuration for welcome - https://github.com/behaviorbot/welcome
+
+# Configuration for new-issue-welcome - https://github.com/behaviorbot/new-issue-welcome
+
+# Comment to be posted to on first time issues
+newIssueWelcomeComment: |
+  ![Hello welcome GIF](https://media.giphy.com/media/bcKmIWkUMCjVm/giphy.gif)
+  Thank you so much for opening your first issue here! :cherry_blossom:
+  :white_check_mark: I hope you have kindly checked any other [opened issues](https://github.com/rvalitov/zabbix-php-fpm/issues) to make sure that it's not a duplicate :pray:
+  :white_check_mark: And you have read the [Wiki](https://github.com/rvalitov/zabbix-php-fpm/wiki) of this project that contains a full documentation, specifically the [Installation instructions](https://github.com/rvalitov/zabbix-php-fpm/wiki/Installation) and [Troubleshooting guide](https://github.com/rvalitov/zabbix-php-fpm/wiki/Testing-and-Troubleshooting) :innocent:
+  :information_source: You may add any additional information by editing your original post or by posting additional comments below.
+  :information_source: We need some time to read your issue and verify it, so please, be patient :innocent:
+  :information_source: Any questions or comments regarding your issue will be posted here below that may require your response. So, please, don't miss the Github notifications about new updates on this topic :wink:
+
+  We will kindly investigate the information you provided and hopefully return to you as soon as possible! :blush:
+
+# Configuration for new-pr-welcome - https://github.com/behaviorbot/new-pr-welcome
+
+# Comment to be posted to on PRs from first time contributors in your repository
+newPRWelcomeComment: |
+  ![Thank you GIF](https://media.giphy.com/media/3o6Zt6KHxJTbXCnSvu/giphy.gif)
+  Thank you so much for opening this pull request! :blush::cherry_blossom: Your contribution is much appreciated! :pray:
+  It takes some time to make a review of your contribution before merging your code, so please, be patient :innocent:
+  Any questions or comments regarding your pull request will be posted here below that may require your response. So, please, don't miss the Github notifications about this pull request :wink: Thank you!
+
+# Configuration for first-pr-merge - https://github.com/behaviorbot/first-pr-merge
+
+# Comment to be posted to on pull requests merged by a first time user
+firstPRMergeComment: |
+  ![Happy dance GIF](https://media.giphy.com/media/Q8IYWnnogTYM5T6Yo0/giphy.gif)
+  Congrats on merging your first pull request! :clap::cherry_blossom: Thank you so much for your contribution! :pray: A really good work! :muscle::thumbsup:
+  If you would like to improve this project any further, I will be happy to receive new pull requests from you! :innocent:
+
+# It is recommend to include as many gifs and emojis as possible
