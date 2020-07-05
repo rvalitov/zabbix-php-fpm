@@ -226,7 +226,7 @@ testZabbixDiscoverNumberOfPortPools() {
   assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
 }
 
-#This test should be last
+#This test should be last in Zabbix tests
 testZabbixDiscoverTimeout() {
   #Create lots of pools
   MAX_POOLS=100
@@ -234,6 +234,26 @@ testZabbixDiscoverTimeout() {
   setupPools
 
   testZabbixDiscoverReturnsData
+}
+
+#################################
+#The following tests should be last, no tests of actual data should be done afterwards
+
+testMissingPackagesDiscoveryScript() {
+  sudo apt-get -y purge jq
+
+  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
+  IS_OK=$(echo "$DATA" | grep -F ' not found.')
+  assertNotNull "Discovery script didn't report error on missing utility 'jq'"
+}
+
+testMissingPackagesStatusScript() {
+  sudo apt-get -y purge libfcgi-bin libfcgi0ldbl
+
+  PHP_POOL=$(getAnySocket)
+  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
+  IS_OK=$(echo "$DATA" | grep -F ' not found.')
+  assertNotNull "Status script didn't report error on missing utility 'cgi-fcgi'"
 }
 
 # Load shUnit2.
