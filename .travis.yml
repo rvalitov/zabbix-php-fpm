@@ -13,6 +13,7 @@ jobs:
             - sourceline: 'deb http://repo.zabbix.com/zabbix/4.0/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
           packages:
+            - bc
             - ca-certificates
             - curl
             - grep
@@ -37,6 +38,7 @@ jobs:
             - sourceline: 'deb http://repo.zabbix.com/zabbix/4.4/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
           packages:
+            - bc
             - ca-certificates
             - curl
             - grep
@@ -61,6 +63,7 @@ jobs:
             - sourceline: 'deb http://repo.zabbix.com/zabbix/5.0/ubuntu bionic main'
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
           packages:
+            - bc
             - ca-certificates
             - curl
             - grep
@@ -86,6 +89,7 @@ jobs:
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
             - sourceline: 'ppa:ondrej/php'
           packages:
+            - bc
             - ca-certificates
             - curl
             - grep
@@ -115,6 +119,7 @@ jobs:
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
             - sourceline: 'ppa:ondrej/php'
           packages:
+            - bc
             - ca-certificates
             - curl
             - grep
@@ -144,6 +149,7 @@ jobs:
               key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
             - sourceline: 'ppa:ondrej/php'
           packages:
+            - bc
             - ca-certificates
             - curl
             - grep
