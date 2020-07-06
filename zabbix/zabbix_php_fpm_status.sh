@@ -6,12 +6,12 @@
 S_FCGI=$(type -P cgi-fcgi)
 S_GREP=$(type -P grep)
 
-if [[ ! -f $S_FCGI ]]; then
+if [[ ! -x $S_FCGI ]]; then
   echo "Utility 'cgi-fcgi' not found. Please, install it first."
   exit 1
 fi
 
-if [[ ! -f $S_GREP ]]; then
+if [[ ! -x $S_GREP ]]; then
   echo "Utility 'grep' not found. Please, install it first."
   exit 1
 fi

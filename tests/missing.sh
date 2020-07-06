@@ -17,10 +17,6 @@ oneTimeSetUp() {
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 
-  sudo apt-get -y purge jq
-  sudo apt-get -y purge libfcgi-bin libfcgi0ldbl
-  sudo apt autoremove
-
   echo "All done, starting tests..."
 }
 

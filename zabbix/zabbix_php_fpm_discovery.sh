@@ -44,67 +44,67 @@ S_DATE=$(type -P date)
 S_BC=$(type -P bc)
 S_SLEEP=$(type -P sleep)
 
-if [[ ! -f $S_PS ]]; then
+if [[ ! -x $S_PS ]]; then
   ${S_ECHO} "Utility 'ps' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_GREP ]]; then
+if [[ ! -x $S_GREP ]]; then
   ${S_ECHO} "Utility 'grep' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_AWK ]]; then
+if [[ ! -x $S_AWK ]]; then
   ${S_ECHO} "Utility 'awk' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_SORT ]]; then
+if [[ ! -x $S_SORT ]]; then
   ${S_ECHO} "Utility 'sort' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_UNIQ ]]; then
+if [[ ! -x $S_UNIQ ]]; then
   ${S_ECHO} "Utility 'uniq' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_HEAD ]]; then
+if [[ ! -x $S_HEAD ]]; then
   ${S_ECHO} "Utility 'head' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_LSOF ]]; then
+if [[ ! -x $S_LSOF ]]; then
   ${S_ECHO} "Utility 'lsof' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_JQ ]]; then
+if [[ ! -x $S_JQ ]]; then
   ${S_ECHO} "Utility 'jq' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f ${S_DIRNAME} ]]; then
+if [[ ! -x ${S_DIRNAME} ]]; then
   ${S_ECHO} "Utility 'dirname' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f ${S_CAT} ]]; then
+if [[ ! -x ${S_CAT} ]]; then
   ${S_ECHO} "Utility 'cat' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f ${S_BASH} ]]; then
+if [[ ! -x ${S_BASH} ]]; then
   ${S_ECHO} "Utility 'bash' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f ${S_PRINTF} ]]; then
+if [[ ! -x ${S_PRINTF} ]]; then
   ${S_ECHO} "Utility 'printf' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f ${S_WHOAMI} ]]; then
+if [[ ! -x ${S_WHOAMI} ]]; then
   ${S_ECHO} "Utility 'whoami' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f ${S_DATE} ]]; then
+if [[ ! -x ${S_DATE} ]]; then
   ${S_ECHO} "Utility 'date' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_BC ]]; then
+if [[ ! -x $S_BC ]]; then
   $S_ECHO "Utility 'bc' not found. Please, install it first."
   exit 1
 fi
-if [[ ! -f $S_SLEEP ]]; then
+if [[ ! -x $S_SLEEP ]]; then
   $S_ECHO "Utility 'sleep' not found. Please, install it first."
   exit 1
 fi
