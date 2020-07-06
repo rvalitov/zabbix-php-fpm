@@ -37,7 +37,6 @@ S_JQ=$(type -P jq)
 S_DIRNAME=$(type -P dirname)
 S_CAT=$(type -P cat)
 S_BASH=$(type -P bash)
-S_ECHO=$(type -P echo)
 S_PRINTF=$(type -P printf)
 S_WHOAMI=$(type -P whoami)
 S_DATE=$(type -P date)
@@ -45,67 +44,67 @@ S_BC=$(type -P bc)
 S_SLEEP=$(type -P sleep)
 
 if [[ ! -x $S_PS ]]; then
-  ${S_ECHO} "Utility 'ps' not found. Please, install it first."
+  echo "Utility 'ps' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_GREP ]]; then
-  ${S_ECHO} "Utility 'grep' not found. Please, install it first."
+  echo "Utility 'grep' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_AWK ]]; then
-  ${S_ECHO} "Utility 'awk' not found. Please, install it first."
+  echo "Utility 'awk' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_SORT ]]; then
-  ${S_ECHO} "Utility 'sort' not found. Please, install it first."
+  echo "Utility 'sort' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_UNIQ ]]; then
-  ${S_ECHO} "Utility 'uniq' not found. Please, install it first."
+  echo "Utility 'uniq' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_HEAD ]]; then
-  ${S_ECHO} "Utility 'head' not found. Please, install it first."
+  echo "Utility 'head' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_LSOF ]]; then
-  ${S_ECHO} "Utility 'lsof' not found. Please, install it first."
+  echo "Utility 'lsof' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_JQ ]]; then
-  ${S_ECHO} "Utility 'jq' not found. Please, install it first."
+  echo "Utility 'jq' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x ${S_DIRNAME} ]]; then
-  ${S_ECHO} "Utility 'dirname' not found. Please, install it first."
+  echo "Utility 'dirname' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x ${S_CAT} ]]; then
-  ${S_ECHO} "Utility 'cat' not found. Please, install it first."
+  echo "Utility 'cat' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x ${S_BASH} ]]; then
-  ${S_ECHO} "Utility 'bash' not found. Please, install it first."
+  echo "Utility 'bash' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x ${S_PRINTF} ]]; then
-  ${S_ECHO} "Utility 'printf' not found. Please, install it first."
+  echo "Utility 'printf' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x ${S_WHOAMI} ]]; then
-  ${S_ECHO} "Utility 'whoami' not found. Please, install it first."
+  echo "Utility 'whoami' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x ${S_DATE} ]]; then
-  ${S_ECHO} "Utility 'date' not found. Please, install it first."
+  echo "Utility 'date' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_BC ]]; then
-  $S_ECHO "Utility 'bc' not found. Please, install it first."
+  echo "Utility 'bc' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -x $S_SLEEP ]]; then
-  $S_ECHO "Utility 'sleep' not found. Please, install it first."
+  echo "Utility 'sleep' not found. Please, install it first."
   exit 1
 fi
 
@@ -133,7 +132,7 @@ ACTIVE_USER=$(${S_WHOAMI})
 # Prints a string on screen. Works only if debug mode is enabled.
 function PrintDebug() {
   if [[ -n $DEBUG_MODE ]] && [[ -n $1 ]]; then
-    ${S_ECHO} "$1"
+    echo "$1"
   fi
 }
 
@@ -149,8 +148,8 @@ function EncodeToJson() {
     return 0
   fi
 
-  JSON_POOL=$(${S_ECHO} -n "$POOL_NAME" | ${S_JQ} -aR .)
-  JSON_SOCKET=$(${S_ECHO} -n "$POOL_SOCKET" | ${S_JQ} -aR .)
+  JSON_POOL=$(echo -n "$POOL_NAME" | ${S_JQ} -aR .)
+  JSON_SOCKET=$(echo -n "$POOL_SOCKET" | ${S_JQ} -aR .)
   if [[ ${POOL_FIRST} == 1 ]]; then
     RESULT_DATA="$RESULT_DATA,"
   fi
@@ -177,11 +176,11 @@ function UpdatePoolInCache() {
   for ITEM_INDEX in "${!CACHE[@]}"; do
     CACHE_ITEM="${CACHE[$ITEM_INDEX]}"
     # shellcheck disable=SC2016
-    ITEM_NAME=$(${S_ECHO} "$CACHE_ITEM" | ${S_AWK} '{print $1}')
+    ITEM_NAME=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $1}')
     # shellcheck disable=SC2016
-    ITEM_SOCKET=$(${S_ECHO} "$CACHE_ITEM" | ${S_AWK} '{print $2}')
+    ITEM_SOCKET=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $2}')
     # shellcheck disable=SC2016
-    ITEM_POOL_TYPE=$($S_ECHO "$CACHE_ITEM" | ${S_AWK} '{print $3}')
+    ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $3}')
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
       #Deleting the pool first
@@ -199,11 +198,11 @@ function UpdateCacheList() {
   for ITEM_INDEX in "${!CACHE[@]}"; do
     CACHE_ITEM="${CACHE[$ITEM_INDEX]}"
     # shellcheck disable=SC2016
-    ITEM_NAME=$(${S_ECHO} "$CACHE_ITEM" | ${S_AWK} '{print $1}')
+    ITEM_NAME=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $1}')
     # shellcheck disable=SC2016
-    ITEM_SOCKET=$(${S_ECHO} "$CACHE_ITEM" | ${S_AWK} '{print $2}')
+    ITEM_SOCKET=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $2}')
     # shellcheck disable=SC2016
-    ITEM_POOL_TYPE=$($S_ECHO "$CACHE_ITEM" | ${S_AWK} '{print $3}')
+    ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $3}')
 
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
@@ -289,7 +288,7 @@ function DeletePoolFromPendingList() {
 function SavePrintResults() {
   #Saving pending list:
   if [[ -f $PENDING_FILE ]] && [[ ! -w $PENDING_FILE ]]; then
-    ${S_ECHO} "Error: write permission is not granted to user $ACTIVE_USER for cache file $PENDING_FILE"
+    echo "Error: write permission is not granted to user $ACTIVE_USER for cache file $PENDING_FILE"
     exit 1
   fi
 
@@ -302,7 +301,7 @@ function SavePrintResults() {
   fi
 
   if [[ -f $RESULTS_CACHE_FILE ]] && [[ ! -w $RESULTS_CACHE_FILE ]]; then
-    ${S_ECHO} "Error: write permission is not granted to user $ACTIVE_USER for cache file $RESULTS_CACHE_FILE"
+    echo "Error: write permission is not granted to user $ACTIVE_USER for cache file $RESULTS_CACHE_FILE"
     exit 1
   fi
 
@@ -315,20 +314,20 @@ function SavePrintResults() {
 
   for CACHE_ITEM in "${CACHE[@]}"; do
     # shellcheck disable=SC2016
-    ITEM_NAME=$(${S_ECHO} "$CACHE_ITEM" | ${S_AWK} '{print $1}')
+    ITEM_NAME=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $1}')
     # shellcheck disable=SC2016
-    ITEM_SOCKET=$(${S_ECHO} "$CACHE_ITEM" | ${S_AWK} '{print $2}')
+    ITEM_SOCKET=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $2}')
     EncodeToJson "${ITEM_NAME}" "${ITEM_SOCKET}"
   done
 
   RESULT_DATA="$RESULT_DATA]}"
   PrintDebug "Resulting JSON data for Zabbix:"
-  ${S_ECHO} -n "$RESULT_DATA"
+  echo -n "$RESULT_DATA"
 }
 
 function CheckExecutionTime() {
   CURRENT_TIME=$($S_DATE +%s)
-  ELAPSED_TIME=$($S_ECHO "$CURRENT_TIME - $START_TIME" | $S_BC)
+  ELAPSED_TIME=$(echo "$CURRENT_TIME - $START_TIME" | $S_BC)
   if [[ $ELAPSED_TIME -lt $MAX_EXECUTION_TIME ]]; then
     #All good, we can continue
     PrintDebug "Check execution time OK"
@@ -363,10 +362,10 @@ function CheckPool() {
     # JSON data example:
     # {"pool":"www2","process manager":"ondemand","start time":1578181845,"start since":117,"accepted conn":3,"listen queue":0,"max listen queue":0,"listen queue len":0,"idle processes":0,"active processes":1,"total processes":1,"max active processes":1,"max children reached":0,"slow requests":0}
     # We use basic regular expression here, i.e. we need to use \+ and not escape { and }
-    if [[ -n $(${S_ECHO} "${STATUS_JSON}" | ${S_GREP} -G '^{.*\"pool\":\".\+\".*,\"process manager\":\".\+\".*}$') ]]; then
+    if [[ -n $(echo "${STATUS_JSON}" | ${S_GREP} -G '^{.*\"pool\":\".\+\".*,\"process manager\":\".\+\".*}$') ]]; then
       PrintDebug "Status data for pool $POOL_NAME, socket $POOL_SOCKET, status path $STATUS_PATH is valid"
 
-      PROCESS_MANAGER=$($S_ECHO "$STATUS_JSON" | $S_GREP -oP '"process manager":"\K([a-z]+)')
+      PROCESS_MANAGER=$(echo "$STATUS_JSON" | $S_GREP -oP '"process manager":"\K([a-z]+)')
       if [[ -n $PROCESS_MANAGER ]]; then
         PrintDebug "Detected pool's process manager is $PROCESS_MANAGER"
         UpdatePoolInCache "$POOL_NAME" "$POOL_SOCKET" "$PROCESS_MANAGER"
@@ -441,9 +440,9 @@ function AnalyzePool() {
       if [[ -n $pool ]]; then
         PrintDebug "Checking process: $pool"
         # shellcheck disable=SC2016
-        POOL_TYPE=$(${S_ECHO} "${pool}" | $S_AWK '{print $5}')
+        POOL_TYPE=$(echo "${pool}" | $S_AWK '{print $5}')
         # shellcheck disable=SC2016
-        POOL_SOCKET=$(${S_ECHO} "${pool}" | $S_AWK '{print $9}')
+        POOL_SOCKET=$(echo "${pool}" | $S_AWK '{print $9}')
         if [[ -n $POOL_TYPE ]] && [[ -n $POOL_SOCKET ]]; then
           if [[ $POOL_TYPE == "unix" ]]; then
             #We have a socket here, test if it's actually a socket:
@@ -457,10 +456,10 @@ function AnalyzePool() {
           elif [[ $POOL_TYPE == "IPv4" ]] || [[ $POOL_TYPE == "IPv6" ]]; then
             #We have a TCP connection here, check it:
             # shellcheck disable=SC2016
-            CONNECTION_TYPE=$(${S_ECHO} "${pool}" | $S_AWK '{print $8}')
+            CONNECTION_TYPE=$(echo "${pool}" | $S_AWK '{print $8}')
             if [[ $CONNECTION_TYPE == "TCP" ]]; then
               #The connection must have state LISTEN:
-              LISTEN=$(${S_ECHO} "${pool}" | $S_GREP -F -w "(LISTEN)")
+              LISTEN=$(echo "${pool}" | $S_GREP -F -w "(LISTEN)")
               if [[ -n $LISTEN ]]; then
                 #Check and replace * to localhost if it's found. Asterisk means that the PHP listens on
                 #all interfaces.
@@ -500,12 +499,12 @@ function PrintPendingList() {
   COUNTER=1
   for POOL_ITEM in "${PENDING_LIST[@]}"; do
     # shellcheck disable=SC2016
-    POOL_NAME=$($S_ECHO "$POOL_ITEM" | $S_AWK '{print $1}')
+    POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK '{print $1}')
     # shellcheck disable=SC2016
-    POOL_SOCKET=$($S_ECHO "$POOL_ITEM" | $S_AWK '{print $2}')
+    POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK '{print $2}')
     if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]]; then
       PrintDebug "#$COUNTER $POOL_NAME $POOL_SOCKET"
-      COUNTER=$($S_ECHO "$COUNTER + 1" | $S_BC)
+      COUNTER=$(echo "$COUNTER + 1" | $S_BC)
     fi
   done
 }
@@ -515,14 +514,14 @@ function PrintCacheList() {
   COUNTER=1
   for POOL_ITEM in "${CACHE[@]}"; do
     # shellcheck disable=SC2016
-    POOL_NAME=$($S_ECHO "$POOL_ITEM" | $S_AWK '{print $1}')
+    POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK '{print $1}')
     # shellcheck disable=SC2016
-    POOL_SOCKET=$($S_ECHO "$POOL_ITEM" | $S_AWK '{print $2}')
+    POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK '{print $2}')
     # shellcheck disable=SC2016
-    PROCESS_MANAGER=$($S_ECHO "$POOL_ITEM" | $S_AWK '{print $3}')
+    PROCESS_MANAGER=$(echo "$POOL_ITEM" | $S_AWK '{print $3}')
     if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]] && [[ -n "$PROCESS_MANAGER" ]]; then
       PrintDebug "#$COUNTER $POOL_NAME $POOL_SOCKET $PROCESS_MANAGER"
-      COUNTER=$($S_ECHO "$COUNTER + 1" | $S_BC)
+      COUNTER=$(echo "$COUNTER + 1" | $S_BC)
     fi
   done
 }
@@ -553,10 +552,10 @@ function ProcessPool() {
 for ARG in "$@"; do
   if [[ ${ARG} == "debug" ]]; then
     DEBUG_MODE="1"
-    ${S_ECHO} "Debug mode enabled"
+    echo "Debug mode enabled"
   elif [[ ${ARG} == "sleep" ]]; then
     USE_SLEEP_TIMEOUT="1"
-    ${S_ECHO} "Debug: Sleep timeout enabled"
+    echo "Debug: Sleep timeout enabled"
   elif [[ ${ARG} == /* ]]; then
     STATUS_PATH=${ARG}
     PrintDebug "Argument $ARG is interpreted as status path"
@@ -569,11 +568,11 @@ PrintDebug "Status path to be used: $STATUS_PATH"
 
 PrintDebug "Local directory is $LOCAL_DIR"
 if [[ ! -f ${STATUS_SCRIPT} ]]; then
-  ${S_ECHO} "Helper script $STATUS_SCRIPT not found"
+  echo "Helper script $STATUS_SCRIPT not found"
   exit 1
 fi
 if [[ ! -r ${STATUS_SCRIPT} ]]; then
-  ${S_ECHO} "Helper script $STATUS_SCRIPT is not readable"
+  echo "Helper script $STATUS_SCRIPT is not readable"
   exit 1
 fi
 PrintDebug "Helper script $STATUS_SCRIPT is reachable"
@@ -625,9 +624,9 @@ PrintDebug "Processing pools"
 
 for POOL_ITEM in "${PENDING_LIST[@]}"; do
   # shellcheck disable=SC2016
-  POOL_NAME=$($S_ECHO "$POOL_ITEM" | $S_AWK '{print $1}')
+  POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK '{print $1}')
   # shellcheck disable=SC2016
-  POOL_SOCKET=$($S_ECHO "$POOL_ITEM" | $S_AWK '{print $2}')
+  POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK '{print $2}')
   if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]]; then
     ProcessPool "$POOL_NAME" "$POOL_SOCKET"
 
