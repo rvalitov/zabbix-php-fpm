@@ -245,7 +245,7 @@ testZabbixDiscoverNumberOfIPPools() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"localhost",' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  POOLS_BY_DESIGN="$PHP_COUNT"
   assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
 }
 
