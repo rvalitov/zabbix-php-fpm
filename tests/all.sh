@@ -158,7 +158,7 @@ testStatusScriptSocket() {
   PHP_POOL=$(getAnySocket)
 
   #Make the test:
-  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
   echo "Success test of $PHP_POOL"
@@ -169,7 +169,7 @@ testStatusScriptPort() {
   PHP_POOL="127.0.0.1:$PHP_PORT"
 
   #Make the test:
-  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
   echo "Success test of $PHP_POOL"
@@ -195,13 +195,13 @@ testZabbixStatusPort() {
 }
 
 testDiscoverScriptReturnsData() {
-  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
 }
 
 testDiscoverScriptDebug() {
-  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "/php-fpm-status")
   ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
   assertNull "Discover script errors: $DATA" "$ERRORS_LIST"
 }
