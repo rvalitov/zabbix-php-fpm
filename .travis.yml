@@ -21,8 +21,8 @@ jobs:
             - zabbix-agent
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
-        - sudo apt-get -y purge jq
-        - sudo apt-get -y purge libfcgi-bin libfcgi0ldbl
+        - sudo apt-get -y remove jq
+        - sudo apt-get -y remove libfcgi-bin libfcgi0ldbl
         - sudo apt autoremove
         - jq --version
       script: bash tests/missing.sh
