@@ -267,25 +267,5 @@ testZabbixDiscoverTimeout() {
   testZabbixDiscoverReturnsData
 }
 
-#################################
-#The following tests should be last, no tests of actual data should be done afterwards
-
-testMissingPackagesDiscoveryScript() {
-  sudo apt-get -y purge jq
-
-  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
-  IS_OK=$(echo "$DATA" | grep -F ' not found.')
-  assertNotNull "Discovery script didn't report error on missing utility 'jq'"
-}
-
-testMissingPackagesStatusScript() {
-  sudo apt-get -y purge libfcgi-bin libfcgi0ldbl
-
-  PHP_POOL=$(getAnySocket)
-  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
-  IS_OK=$(echo "$DATA" | grep -F ' not found.')
-  assertNotNull "Status script didn't report error on missing utility 'cgi-fcgi'"
-}
-
 # Load shUnit2.
 . shunit2

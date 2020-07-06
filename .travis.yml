@@ -5,6 +5,27 @@ jobs:
   include:
     - os: linux
       dist: bionic
+      name: "Missing packages test"
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.0/ubuntu bionic main'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - bc
+            - curl
+            - grep
+            - sed
+            - gawk
+            - zabbix-agent
+            - zabbix-get
+            - php-fpm
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+      script: bash tests/missing.sh
+    - os: linux
+      dist: bionic
       name: "Zabbix 4.0 @ Ubuntu 18 bionic, PHP default"
       arch: amd64
       addons:
