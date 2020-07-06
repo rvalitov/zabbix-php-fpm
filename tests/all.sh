@@ -234,7 +234,7 @@ testZabbixDiscoverNumberOfOndemandPoolsCold() {
 
 testZabbixDiscoverNumberOfOndemandPoolsHot() {
   # We must start all the pools
-  POOL_URL="/"
+  POOL_URL="/php-fpm-status"
   PHP_COUNT=$(getNumberOfPHPVersions)
 
   PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
@@ -251,7 +251,7 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
         SCRIPT_FILENAME=$POOL_SOCKET \
         QUERY_STRING=json \
         REQUEST_METHOD=GET \
-        cgi-fcgi -bind -connect "$POOL_URL" 2>/dev/null
+        sudo cgi-fcgi -bind -connect "$POOL_URL" 2>/dev/null
       done
     fi
   done <<<"$PHP_LIST"
