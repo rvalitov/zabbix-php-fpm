@@ -221,35 +221,40 @@ testZabbixDiscoverNumberOfStaticPools() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"static' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
 }
 
 testZabbixDiscoverNumberOfDynamicPools() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"dynamic' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
 }
 
 testZabbixDiscoverNumberOfOndemandPools() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
 }
 
 testZabbixDiscoverNumberOfIPPools() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"localhost",' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
 }
 
 testZabbixDiscoverNumberOfPortPools() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"port1",' | wc -l)
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"port' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
 }
 
 #This test should be last in Zabbix tests
