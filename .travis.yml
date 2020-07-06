@@ -24,6 +24,7 @@ jobs:
         - sudo apt-get -y purge jq
         - sudo apt-get -y purge libfcgi-bin libfcgi0ldbl
         - sudo apt autoremove
+        - jq --version
       script: bash tests/missing.sh
     - os: linux
       dist: bionic

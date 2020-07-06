@@ -6,6 +6,7 @@
 MAX_POOLS=3
 MAX_PORTS=3
 MIN_PORT=9000
+TEST_SOCKET=""
 
 copyPool() {
   ORIGINAL_FILE=$1
@@ -41,6 +42,9 @@ setupPool() {
     POOL_NAME="static$c"
     POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
+    if [[ -z $TEST_SOCKET ]]; then
+      TEST_SOCKET="$POOL_SOCKET"
+    fi
   done
 
   for ((c = 1; c <= MAX_POOLS; c++)); do
@@ -85,17 +89,6 @@ setupPools() {
 getNumberOfPHPVersions() {
   PHP_COUNT=$(find /etc/php/ -name 'www.conf' -type f | wc -l)
   echo "$PHP_COUNT"
-}
-
-getAnySocket() {
-  #Get any socket of PHP-FPM:
-  PHP_FIRST=$(find /etc/php/ -name 'www.conf' -type f | head -n1)
-  assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
-  PHP_VERSION=$(echo "$PHP_FIRST" | grep -oP "(\d\.\d)")
-  assertNotNull "Failed to get PHP version" "$PHP_VERSION"
-  PHP_POOL=$(find /run/php/ -name "php${PHP_VERSION}*.sock" -type s | head -n1)
-  assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
-  echo "$PHP_POOL"
 }
 
 getAnyPort() {
@@ -155,10 +148,8 @@ testPHPIsRunning() {
 }
 
 testStatusScriptSocket() {
-  PHP_POOL=$(getAnySocket)
-
   #Make the test:
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
   echo "Success test of $PHP_POOL"
@@ -176,9 +167,7 @@ testStatusScriptPort() {
 }
 
 testZabbixStatusSocket() {
-  PHP_POOL=$(getAnySocket)
-
-  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$TEST_SOCKET","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
   echo "Success test of $PHP_POOL"
@@ -228,7 +217,16 @@ testZabbixDiscoverNumberOfDynamicPools() {
   assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
 }
 
-testZabbixDiscoverNumberOfOndemandPools() {
+testZabbixDiscoverNumberOfOndemandPoolsCold() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
+  #If the pools are not started then we have 0 here:
+  assertEquals "Number of pools mismatch" "0" "$NUMBER_OF_POOLS"
+}
+
+testZabbixDiscoverNumberOfOndemandPoolsHot() {
+  # We must start all the pools
+
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
