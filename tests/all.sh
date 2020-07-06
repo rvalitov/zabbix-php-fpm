@@ -36,11 +36,6 @@ setupPool() {
   #Delete all active pools except www.conf:
   sudo find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
 
-  #Add status path
-  sudo sed -i 's#;pm.status_path.*#pm.status_path = /php-fpm-status#' "$POOL_FILE"
-  #Set pool manager
-  sudo sed -i 's#pm = dynamic#pm = static#' "$POOL_FILE"
-
   #Create new socket pools
   for ((c = 1; c <= MAX_POOLS; c++)); do
     POOL_NAME="static$c"
