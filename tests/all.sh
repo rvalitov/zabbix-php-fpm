@@ -43,9 +43,21 @@ setupPool() {
 
   #Create new socket pools
   for ((c = 1; c <= MAX_POOLS; c++)); do
-    POOL_NAME="socket$c"
+    POOL_NAME="static$c"
     POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
+  done
+
+  for ((c = 1; c <= MAX_POOLS; c++)); do
+    POOL_NAME="dynamic$c"
+    POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+    copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "dynamic"
+  done
+
+  for ((c = 1; c <= MAX_POOLS; c++)); do
+    POOL_NAME="ondemand$c"
+    POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+    copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "ondemand"
   done
 
   #Create TCP port based pools
@@ -205,9 +217,23 @@ testZabbixDiscoverReturnsData() {
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
 }
 
-testZabbixDiscoverNumberOfSocketPools() {
+testZabbixDiscoverNumberOfStaticPools() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"socket1",' | wc -l)
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"static' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+}
+
+testZabbixDiscoverNumberOfDynamicPools() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"dynamic' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+}
+
+testZabbixDiscoverNumberOfOndemandPools() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
   assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
 }
