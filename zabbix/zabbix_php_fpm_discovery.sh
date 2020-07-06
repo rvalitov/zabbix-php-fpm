@@ -42,6 +42,7 @@ S_WHOAMI=$(type -P whoami)
 S_DATE=$(type -P date)
 S_BC=$(type -P bc)
 S_SLEEP=$(type -P sleep)
+S_FCGI=$(type -P cgi-fcgi)
 
 if [[ ! -x $S_PS ]]; then
   echo "Utility 'ps' not found. Please, install it first."
@@ -105,6 +106,10 @@ if [[ ! -x $S_BC ]]; then
 fi
 if [[ ! -x $S_SLEEP ]]; then
   echo "Utility 'sleep' not found. Please, install it first."
+  exit 1
+fi
+if [[ ! -x $S_FCGI ]]; then
+  echo "Utility 'cgi-fcgi' not found. Please, install it first."
   exit 1
 fi
 

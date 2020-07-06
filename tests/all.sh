@@ -227,6 +227,27 @@ testZabbixDiscoverNumberOfOndemandPoolsCold() {
 
 testZabbixDiscoverNumberOfOndemandPoolsHot() {
   # We must start all the pools
+  POOL_URL="/"
+  PHP_COUNT=$(getNumberOfPHPVersions)
+
+  PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
+  while IFS= read -r pool; do
+    if [[ -n $pool ]]; then
+      POOL_DIR=$(dirname "$pool")
+      PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+
+      for ((c = 1; c <= MAX_POOLS; c++)); do
+        POOL_NAME="ondemand$c"
+        POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+
+        SCRIPT_NAME=$POOL_SOCKET \
+        SCRIPT_FILENAME=$POOL_SOCKET \
+        QUERY_STRING=json \
+        REQUEST_METHOD=GET \
+        cgi-fcgi -bind -connect "$POOL_URL" 2>/dev/null
+      done
+    fi
+  done <<<"$PHP_LIST"
 
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
