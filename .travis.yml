@@ -22,6 +22,8 @@ jobs:
             - zabbix-get
             - php-fpm
       before_script:
+        - sudo apt-get -y purge jq
+        - sudo apt-get -y purge libfcgi-bin libfcgi0ldbl
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
       script: bash tests/missing.sh
     - os: linux
