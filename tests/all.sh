@@ -193,7 +193,14 @@ testDiscoverScriptDebug() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "/php-fpm-status")
   NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  assertEquals "Discover script errors: $DATA" "$PHP_COUNT" "$NUMBER_OF_ERRORS"
+  if [[ $PHP_COUNT != $NUMBER_OF_ERRORS ]]; then
+    ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
+    echo "Errors list:"
+    echo "$ERRORS_LIST"
+    echo "Full output:"
+    echo "$DATA"
+  fi
+  assertEquals "Discover script errors mismatch" "$PHP_COUNT" "$NUMBER_OF_ERRORS"
 }
 
 testZabbixDiscoverReturnsData() {
