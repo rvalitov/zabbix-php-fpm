@@ -23,13 +23,13 @@ oneTimeSetUp() {
 testMissingPackagesDiscoveryScript() {
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F ' not found.')
-  assertNotNull "Discovery script didn't report error on missing utility 'jq'" "$IS_OK"
+  assertNotNull "Discovery script didn't report error on missing utilities $DATA" "$IS_OK"
 }
 
 testMissingPackagesStatusScript() {
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "localhost:9000" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F ' not found.')
-  assertNotNull "Status script didn't report error on missing utility 'cgi-fcgi'" "$IS_OK"
+  assertNotNull "Status script didn't report error on missing utilities $DATA" "$IS_OK"
 }
 
 # Load shUnit2.
