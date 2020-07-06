@@ -561,6 +561,9 @@ for ARG in "$@"; do
   elif [[ ${ARG} == "sleep" ]]; then
     USE_SLEEP_TIMEOUT="1"
     echo "Debug: Sleep timeout enabled"
+  elif [[ ${ARG} == "nosleep" ]]; then
+    MAX_EXECUTION_TIME="10000000"
+    echo "Debug: Timeout checks disabled"
   elif [[ ${ARG} == /* ]]; then
     STATUS_PATH=${ARG}
     PrintDebug "Argument $ARG is interpreted as status path"
