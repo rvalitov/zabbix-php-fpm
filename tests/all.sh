@@ -8,6 +8,7 @@ MAX_PORTS=3
 MIN_PORT=9000
 TEST_SOCKET=""
 ONDEMAND_TIMEOUT=60
+ZABBIX_TIMEOUT=10
 
 function getUserParameters() {
   sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f | head -n1
@@ -171,6 +172,7 @@ oneTimeSetUp() {
 
   #Configure Zabbix:
   echo 'zabbix ALL=NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh,/etc/zabbix/zabbix_php_fpm_status.sh' | sudo EDITOR='tee -a' visudo
+  sudo sed -i "s#.* Timeout=.*#Timeout = $ZABBIX_TIMEOUT#" "/etc/zabbix/zabbix_agentd.conf"
   sudo service zabbix-agent restart
 
   echo "Setup PHP-FPM..."
@@ -357,7 +359,7 @@ testZabbixDiscoverDoubleRun() {
 function discoverAllZabbix() {
   DATA_OLD=$1
   DATA_COUNT=$2
-  MAX_CHECKS=50
+  MAX_CHECKS=150
 
   if [[ -z $DATA_COUNT ]]; then
     DATA_COUNT=0
