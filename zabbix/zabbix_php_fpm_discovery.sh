@@ -7,11 +7,11 @@
 # Zabbix allows us to use a script that runs no more than 3 seconds by default. This option can be adjusted in settings:
 # see Timeout option https://www.zabbix.com/forum/zabbix-help/1284-server-agentd-timeout-parameter-in-config
 # So, we need to stop and save our state in case we need more time to run.
-# This parameter sets the maximum number of seconds that the script is allowed to run.
+# This parameter sets the maximum number of milliseconds that the script is allowed to run.
 # After this duration is reached, the script will stop running and save its state.
 # So, the actual execution time will be slightly more than this parameter.
-# We put value equivalent to 2 seconds here.
-MAX_EXECUTION_TIME="2"
+# We put value equivalent to 1.5 seconds here.
+MAX_EXECUTION_TIME="1500"
 
 #Status path used in calls to PHP-FPM
 STATUS_PATH="/php-fpm-status"
@@ -130,7 +130,7 @@ RESULTS_CACHE_FILE="$LOCAL_DIR/php_fpm_results.cache"
 STATUS_SCRIPT="$LOCAL_DIR/zabbix_php_fpm_status.sh"
 
 #Start time of the script
-START_TIME=$($S_DATE +%s)
+START_TIME=$($S_DATE +%s%N)
 
 ACTIVE_USER=$(${S_WHOAMI})
 
@@ -334,16 +334,16 @@ function SavePrintResults() {
 }
 
 function CheckExecutionTime() {
-  CURRENT_TIME=$($S_DATE +%s)
-  ELAPSED_TIME=$(echo "$CURRENT_TIME - $START_TIME" | $S_BC)
+  CURRENT_TIME=$($S_DATE +%s%N)
+  ELAPSED_TIME=$(echo "($CURRENT_TIME - $START_TIME)/1000000" | $S_BC)
   if [[ $ELAPSED_TIME -lt $MAX_EXECUTION_TIME ]]; then
     #All good, we can continue
-    PrintDebug "Check execution time OK, elapsed $ELAPSED_TIME"
+    PrintDebug "Check execution time OK, elapsed $ELAPSED_TIME ms"
     return 1
   fi
 
   #We need to save our state and exit
-  PrintDebug "Check execution time: stop required, elapsed $ELAPSED_TIME"
+  PrintDebug "Check execution time: stop required, elapsed $ELAPSED_TIME ms"
 
   SavePrintResults
 
