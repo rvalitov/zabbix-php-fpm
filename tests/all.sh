@@ -211,11 +211,13 @@ testZabbixDiscoverReturnsData() {
 
 testDiscoverScriptSleep() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
-  CHECK_OK=$(echo "$DATA" | grep -F "Check execution time OK")
-  STOP_OK=$(echo "$DATA" | grep -F "stop required")
+  CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
+  STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
 
-  assertNotNull "No success time checks detected" "$CHECK_OK"
-  assertNotNull "No success stop checks detected" "$STOP_OK"
+  assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 ]"
+  echo "Success time checks: $CHECK_OK_COUNT"
+  assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
+  echo "Stop time checks: $STOP_OK_COUNT"
 }
 
 testDiscoverScriptDoubleRun() {
@@ -304,6 +306,13 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
         POOL_NAME="ondemand$c"
         POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
 
+        PHP_STATUS=$(
+          SCRIPT_NAME=$POOL_SOCKET \
+          SCRIPT_FILENAME=$POOL_SOCKET \
+          QUERY_STRING=json \
+          REQUEST_METHOD=GET \
+          sudo cgi-fcgi -bind -connect "$POOL_URL" 2>/dev/null
+        )
         PHP_STATUS=$(
           SCRIPT_NAME=$POOL_SOCKET \
           SCRIPT_FILENAME=$POOL_SOCKET \
