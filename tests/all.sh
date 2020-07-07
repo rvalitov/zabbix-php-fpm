@@ -27,6 +27,10 @@ copyPool() {
   sudo sed -i "s#listen =.*#listen = $POOL_SOCKET#" "$NEW_POOL_FILE"
   #Pool name
   sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
+
+  if [[ $POOL_TYPE == "ondemand" ]]; then
+    sudo sed -i 's#;pm.process_idle_timeout.*#pm.process_idle_timeout = 60s#' "$NEW_POOL_FILE"
+  fi
 }
 
 setupPool() {
@@ -126,7 +130,9 @@ oneTimeSetUp() {
 
 tearDown() {
   restoreUserParameters
+  sleep 2
   sudo service zabbix-agent restart
+  sleep 2
 }
 
 testZabbixGetInstalled() {
