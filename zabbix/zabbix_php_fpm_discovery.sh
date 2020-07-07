@@ -7,6 +7,7 @@ S_PS=$(type -P ps)
 S_GREP=$(type -P grep)
 S_AWK=$(type -P awk)
 S_SORT=$(type -P sort)
+S_UNIQ=$(type -P uniq)
 S_HEAD=$(type -P head)
 S_LSOF=$(type -P lsof)
 S_JQ=$(type -P jq)
@@ -31,6 +32,10 @@ if [[ ! -f $S_AWK ]]; then
 fi
 if [[ ! -f $S_SORT ]]; then
   ${S_ECHO} "Utility 'sort' not found. Please, install it first."
+  exit 1
+fi
+if [[ ! -f $S_UNIQ ]]; then
+  ${S_ECHO} "Utility 'uniq' not found. Please, install it first."
   exit 1
 fi
 if [[ ! -f $S_HEAD ]]; then
@@ -133,6 +138,7 @@ function ProcessPool() {
   POOL_NAME=$1
   POOL_SOCKET=$2
   if [[ -z ${POOL_NAME} ]] || [[ -z ${POOL_SOCKET} ]]; then
+    PrintDebug "Invalid arguments for ProcessPool"
     return 0
   fi
 
@@ -215,14 +221,21 @@ fi
 
 mapfile -t PS_LIST < <($S_PS ax | $S_GREP -F "php-fpm: pool " | $S_GREP -F -v "grep")
 # shellcheck disable=SC2016
-POOL_LIST=$(${S_PRINTF} '%s\n' "${PS_LIST[@]}" | $S_AWK '{print $NF}' | $S_SORT -u)
+POOL_NAMES_LIST=$(${S_PRINTF} '%s\n' "${PS_LIST[@]}" | $S_AWK '{print $NF}' | $S_SORT -u)
 POOL_FIRST=0
 #We store the resulting JSON data for Zabbix in the following var:
 RESULT_DATA="{\"data\":["
 while IFS= read -r line; do
   # shellcheck disable=SC2016
-  POOL_PID=$(${S_PRINTF} '%s\n' "${PS_LIST[@]}" | $S_GREP -F -w "php-fpm: pool $line" | $S_HEAD -1 | $S_AWK '{print $1}')
-  if [[ -n $POOL_PID ]]; then
+  POOL_PID_LIST=$(${S_PRINTF} '%s\n' "${PS_LIST[@]}" | $S_GREP -F -w "php-fpm: pool $line" | $S_AWK '{print $1}')
+  POOL_PID_ARGS=""
+  while IFS= read -r POOL_PID; do
+    if [[ -n $POOL_PID ]]; then
+      POOL_PID_ARGS="$POOL_PID_ARGS -p $POOL_PID"
+    fi
+  done <<<"$POOL_PID_LIST"
+
+  if [[ -n $POOL_PID_ARGS ]]; then
     #We search for socket or IP address and port
     #Socket example:
     #php-fpm7. 25897 root 9u unix 0x000000006509e31f 0t0 58381847 /run/php/php7.3-fpm.sock type=STREAM
@@ -235,84 +248,85 @@ while IFS= read -r line; do
     #php-fpm7. 1203 www-data 8u IPv4 15070917 0t0 TCP localhost.localdomain:23054->localhost.localdomain:postgresql (ESTABLISHED)
     #More info at https://github.com/rvalitov/zabbix-php-fpm/issues/12
 
-    PrintDebug "Started analysis of pool $line, PID $POOL_PID"
+    PrintDebug "Started analysis of pool $line, PID(s): $POOL_PID_ARGS"
     #Extract only important information:
     #Use -P to show port number instead of port name, see https://github.com/rvalitov/zabbix-php-fpm/issues/24
-    POOL_PARAMS_LIST=$($S_LSOF -P -p "$POOL_PID" 2>/dev/null | $S_GREP -w -e "unix" -e "TCP")
+    #Use -n flag to show IP address and not convert it to domain name (like localhost)
+    #Sometimes different PHP-FPM versions may have the same names of pools, so we need to consider that.
+    # It's considered that a pair of pool name and socket must be unique.
+    #Sorting is required, because uniq needs it
+    POOL_PARAMS_LIST=$($S_LSOF -n -P $POOL_PID_ARGS 2>/dev/null | $S_GREP -w -e "unix" -e "TCP" | $S_SORT -u | $S_UNIQ -f8)
     FOUND_POOL=""
     while IFS= read -r pool; do
       if [[ -n $pool ]]; then
-        if [[ -z $FOUND_POOL ]]; then
-          PrintDebug "Checking process: $pool"
-          # shellcheck disable=SC2016
-          POOL_TYPE=$(${S_ECHO} "${pool}" | $S_AWK '{print $5}')
-          # shellcheck disable=SC2016
-          POOL_SOCKET=$(${S_ECHO} "${pool}" | $S_AWK '{print $9}')
-          if [[ -n $POOL_TYPE ]] && [[ -n $POOL_SOCKET ]]; then
-            if [[ $POOL_TYPE == "unix" ]]; then
-              #We have a socket here, test if it's actually a socket:
-              if [[ -S $POOL_SOCKET ]]; then
-                PrintDebug "Found socket $POOL_SOCKET"
+        PrintDebug "Checking process: $pool"
+        # shellcheck disable=SC2016
+        POOL_TYPE=$(${S_ECHO} "${pool}" | $S_AWK '{print $5}')
+        # shellcheck disable=SC2016
+        POOL_SOCKET=$(${S_ECHO} "${pool}" | $S_AWK '{print $9}')
+        if [[ -n $POOL_TYPE ]] && [[ -n $POOL_SOCKET ]]; then
+          if [[ $POOL_TYPE == "unix" ]]; then
+            #We have a socket here, test if it's actually a socket:
+            if [[ -S $POOL_SOCKET ]]; then
+              PrintDebug "Found socket $POOL_SOCKET"
+              ProcessPool "${line}" "${POOL_SOCKET}"
+              POOL_STATUS=$?
+              if [[ ${POOL_STATUS} -gt 0 ]]; then
+                FOUND_POOL="1"
+                PrintDebug "Success: socket $POOL_SOCKET returned valid status data"
+                EncodeToJson "${line}" "${POOL_SOCKET}"
+              else
+                PrintDebug "Error: socket $POOL_SOCKET didn't return valid data"
+              fi
+            else
+              PrintDebug "Error: specified socket $POOL_SOCKET is not valid"
+            fi
+          elif [[ $POOL_TYPE == "IPv4" ]] || [[ $POOL_TYPE == "IPv6" ]]; then
+            #We have a TCP connection here, check it:
+            # shellcheck disable=SC2016
+            CONNECTION_TYPE=$(${S_ECHO} "${pool}" | $S_AWK '{print $8}')
+            if [[ $CONNECTION_TYPE == "TCP" ]]; then
+              #The connection must have state LISTEN:
+              LISTEN=$(${S_ECHO} "${pool}" | $S_GREP -F -w "(LISTEN)")
+              if [[ -n $LISTEN ]]; then
+                #Check and replace * to localhost if it's found. Asterisk means that the PHP listens on
+                #all interfaces.
+                PrintDebug "Found TCP connection $POOL_SOCKET"
+                POOL_SOCKET=${POOL_SOCKET/\*:/localhost:}
+                PrintDebug "Processed TCP connection $POOL_SOCKET"
                 ProcessPool "${line}" "${POOL_SOCKET}"
                 POOL_STATUS=$?
                 if [[ ${POOL_STATUS} -gt 0 ]]; then
                   FOUND_POOL="1"
-                  PrintDebug "Success: socket $POOL_SOCKET returned valid status data"
+                  PrintDebug "Success: TCP connection $POOL_SOCKET returned valid status data"
+                  EncodeToJson "${line}" "${POOL_SOCKET}"
                 else
-                  PrintDebug "Error: socket $POOL_SOCKET didn't return valid data"
+                  PrintDebug "Error: TCP connection $POOL_SOCKET didn't return valid data"
                 fi
               else
-                PrintDebug "Error: specified socket $POOL_SOCKET is not valid"
-              fi
-            elif [[ $POOL_TYPE == "IPv4" ]] || [[ $POOL_TYPE == "IPv6" ]]; then
-              #We have a TCP connection here, check it:
-              # shellcheck disable=SC2016
-              CONNECTION_TYPE=$(${S_ECHO} "${pool}" | $S_AWK '{print $8}')
-              if [[ $CONNECTION_TYPE == "TCP" ]]; then
-                #The connection must have state LISTEN:
-                LISTEN=$(${S_ECHO} "${pool}" | $S_GREP -F -w "(LISTEN)")
-                if [[ -n $LISTEN ]]; then
-                  #Check and replace * to localhost if it's found. Asterisk means that the PHP listens on
-                  #all interfaces.
-                  POOL_SOCKET=$(${S_ECHO} -n "${POOL_SOCKET/*:/localhost:}")
-                  PrintDebug "Found TCP connection $POOL_SOCKET"
-                  ProcessPool "${line}" "${POOL_SOCKET}"
-                  POOL_STATUS=$?
-                  if [[ ${POOL_STATUS} -gt 0 ]]; then
-                    FOUND_POOL="1"
-                    PrintDebug "Success: TCP connection $POOL_SOCKET returned valid status data"
-                  else
-                    PrintDebug "Error: TCP connection $POOL_SOCKET didn't return valid data"
-                  fi
-                else
-                  PrintDebug "Warning: expected connection state must be LISTEN, but it was not detected"
-                fi
-              else
-                PrintDebug "Warning: expected connection type is TCP, but found $CONNECTION_TYPE"
+                PrintDebug "Warning: expected connection state must be LISTEN, but it was not detected"
               fi
             else
-              PrintDebug "Unsupported type $POOL_TYPE, skipping"
+              PrintDebug "Warning: expected connection type is TCP, but found $CONNECTION_TYPE"
             fi
           else
-            PrintDebug "Warning: pool type or socket is empty"
+            PrintDebug "Unsupported type $POOL_TYPE, skipping"
           fi
         else
-          PrintDebug "Pool already found, skipping process: $pool"
+          PrintDebug "Warning: pool type or socket is empty"
         fi
       else
         PrintDebug "Error: failed to get process information. Probably insufficient privileges. Use sudo or run this script under root."
       fi
     done <<<"$POOL_PARAMS_LIST"
 
-    if [[ -n ${FOUND_POOL} ]]; then
-      EncodeToJson "${line}" "${POOL_SOCKET}"
-    else
+    if [[ -z ${FOUND_POOL} ]]; then
       PrintDebug "Error: failed to discover information for pool $line"
     fi
   else
     PrintDebug "Error: failed to find PID for pool $line"
   fi
-done <<<"$POOL_LIST"
+done <<<"$POOL_NAMES_LIST"
 
 PrintDebug "Processing pools from old cache..."
 for CACHE_ITEM in "${CACHE[@]}"; do

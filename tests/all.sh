@@ -3,42 +3,81 @@
 #https://github.com/rvalitov/zabbix-php-fpm
 #This script is used for testing
 
+MAX_POOLS=3
+MAX_PORTS=3
+MIN_PORT=9000
+
+copyPool() {
+  ORIGINAL_FILE=$1
+  POOL_NAME=$2
+  POOL_SOCKET=$3
+  POOL_TYPE=$4
+  POOL_DIR=$(dirname "${ORIGINAL_FILE}")
+  PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+
+  NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
+  sudo cp "$ORIGINAL_FILE" "$NEW_POOL_FILE"
+
+  #Add status path
+  sudo sed -i 's#;pm.status_path.*#pm.status_path = /php-fpm-status#' "$NEW_POOL_FILE"
+  #Set pool manager
+  sudo sed -i "s#pm = dynamic#pm = $POOL_TYPE#" "$NEW_POOL_FILE"
+  #Socket
+  sudo sed -i "s#listen =.*#listen = $POOL_SOCKET#" "$NEW_POOL_FILE"
+  #Pool name
+  sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
+}
+
 setupPool() {
   POOL_FILE=$1
   POOL_DIR=$(dirname "${POOL_FILE}")
   PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
 
+  #Delete all active pools except www.conf:
+  find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
+
   #Add status path
-  echo 'pm.status_path = /php-fpm-status' | sudo tee -a "$POOL_FILE"
+  sudo sed -i 's#;pm.status_path.*#pm.status_path = /php-fpm-status#' "$POOL_FILE"
   #Set pool manager
   sudo sed -i 's#pm = dynamic#pm = static#' "$POOL_FILE"
 
-  #Make copies and create new socket pools
-  MAX_POOLS=50
+  #Create new socket pools
   for ((c = 1; c <= MAX_POOLS; c++)); do
     POOL_NAME="socket$c"
-    NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
-    sudo cp "$POOL_FILE" "$NEW_POOL_FILE"
-
-    sudo sed -i "s#listen =.*#listen = /run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock#" "$NEW_POOL_FILE"
-    sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
+    POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+    copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
   done
 
-  #Make copies and create HTTP pools
-  MAX_PORTS=50
+  #Create TCP port based pools
   #Division on 1 is required to convert from float to integer
-  START_PORT=$(echo "(9000 + $PHP_VERSION * 100)/1" | bc)
+  START_PORT=$(echo "($MIN_PORT + $PHP_VERSION * 100 + 1)/1" | bc)
   for ((c = 1; c <= MAX_PORTS; c++)); do
-    POOL_NAME="http$c"
+    POOL_NAME="port$c"
     POOL_PORT=$(echo "($START_PORT + $c)/1" | bc)
-    NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
-    sudo cp "$POOL_FILE" "$NEW_POOL_FILE"
-
-    sudo sed -i "s#listen =.*#listen = 127.0.0.1:$POOL_PORT#" "$NEW_POOL_FILE"
-    sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
+    copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_PORT" "static"
   done
+
+  #Create TCP IPv4 localhost pool
+  POOL_NAME="localhost"
+  POOL_PORT=$(echo "($MIN_PORT + $PHP_VERSION * 100)/1" | bc)
+  POOL_SOCKET="127.0.0.1:$POOL_PORT"
+  copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
 
   sudo service "php${PHP_VERSION}-fpm" restart
+}
+
+setupPools() {
+  PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
+  while IFS= read -r pool; do
+    if [[ -n $pool ]]; then
+      setupPool "$pool"
+    fi
+  done <<<"$PHP_LIST"
+}
+
+getNumberOfPHPVersions() {
+  PHP_COUNT=$(find /etc/php/ -name 'www.conf' -type f | wc -l)
+  echo "$PHP_COUNT"
 }
 
 getAnySocket() {
@@ -60,6 +99,10 @@ getAnyPort() {
 
 oneTimeSetUp() {
   echo "Started job $TRAVIS_JOB_NAME"
+  echo "Host info:"
+  nslookup localhost
+  sudo ifconfig
+  sudo cat /etc/hosts
   echo "Copying Zabbix files..."
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
@@ -75,12 +118,7 @@ oneTimeSetUp() {
   echo "Setup PHP-FPM..."
 
   #Setup PHP-FPM pools:
-  PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
-  while IFS= read -r pool; do
-    if [[ -n $pool ]]; then
-      setupPool "$pool"
-    fi
-  done <<<"$PHP_LIST"
+  setupPools
 
   echo "All done, starting tests..."
 }
@@ -116,6 +154,7 @@ testStatusScriptSocket() {
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+  echo "Success test of $PHP_POOL"
 }
 
 testStatusScriptPort() {
@@ -126,6 +165,7 @@ testStatusScriptPort() {
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+  echo "Success test of $PHP_POOL"
 }
 
 testZabbixStatusSocket() {
@@ -134,6 +174,7 @@ testZabbixStatusSocket() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+  echo "Success test of $PHP_POOL"
 }
 
 testZabbixStatusPort() {
@@ -143,12 +184,46 @@ testZabbixStatusPort() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+  echo "Success test of $PHP_POOL"
 }
 
 testDiscoverScriptReturnsData() {
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
+}
+
+testDiscoverScriptDebug() {
+  DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "/php-fpm-status")
+  ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
+  assertNull "Discover script errors: $DATA" "$ERRORS_LIST"
+}
+
+testZabbixDiscoverReturnsData() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
+  assertNotNull "Discover script failed: $DATA" "$IS_OK"
+}
+
+testZabbixDiscoverNumberOfSocketPools() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"socket1",' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+}
+
+testZabbixDiscoverNumberOfIPPools() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"localhost",' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
+}
+
+testZabbixDiscoverNumberOfPortPools() {
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"port1",' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  assertEquals "Number of pools mismatch" "$PHP_COUNT" "$NUMBER_OF_POOLS"
 }
 
 # Load shUnit2.
