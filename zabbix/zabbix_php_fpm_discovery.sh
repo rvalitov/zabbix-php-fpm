@@ -401,6 +401,7 @@ function sleepNow() {
   if [[ -n $USE_SLEEP_TIMEOUT ]]; then
     PrintDebug "Debug: Sleep for $SLEEP_TIMEOUT sec"
     $S_SLEEP "$SLEEP_TIMEOUT"
+    CheckExecutionTime
   fi
 }
 

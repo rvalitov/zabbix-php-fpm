@@ -7,6 +7,7 @@ MAX_POOLS=3
 MAX_PORTS=3
 MIN_PORT=9000
 TEST_SOCKET=""
+ONDEMAND_TIMEOUT=60
 
 function getUserParameters() {
   sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f | head -n1
@@ -48,7 +49,7 @@ copyPool() {
   sudo sed -i "s#\[www\]#[$POOL_NAME]#" "$NEW_POOL_FILE"
 
   if [[ $POOL_TYPE == "ondemand" ]]; then
-    sudo sed -i 's#;pm.process_idle_timeout.*#pm.process_idle_timeout = 60s#' "$NEW_POOL_FILE"
+    sudo sed -i "s#;pm.process_idle_timeout.*#pm.process_idle_timeout = ${ONDEMAND_TIMEOUT}s#" "$NEW_POOL_FILE"
   fi
 }
 
@@ -119,6 +120,33 @@ setupPools() {
 getNumberOfPHPVersions() {
   PHP_COUNT=$(sudo find /etc/php/ -name 'www.conf' -type f | wc -l)
   echo "$PHP_COUNT"
+}
+
+function startOndemandPoolsCache() {
+  # We must start all the pools
+  POOL_URL="/php-fpm-status"
+
+  PHP_LIST=$(sudo find /etc/php/ -name 'www.conf' -type f)
+  while IFS= read -r pool; do
+    if [[ -n $pool ]]; then
+      POOL_DIR=$(dirname "$pool")
+      PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+
+      for ((c = 1; c <= MAX_POOLS; c++)); do
+        POOL_NAME="ondemand$c"
+        POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+
+        PHP_STATUS=$(
+          SCRIPT_NAME=$POOL_URL \
+          SCRIPT_FILENAME=$POOL_URL \
+          QUERY_STRING=json \
+          REQUEST_METHOD=GET \
+          sudo cgi-fcgi -bind -connect "$POOL_SOCKET" 2>/dev/null
+        )
+        assertNotNull "Failed to connect to $POOL_SOCKET" "$PHP_STATUS"
+      done
+    fi
+  done <<<"$PHP_LIST"
 }
 
 getAnyPort() {
@@ -281,8 +309,12 @@ testDiscoverScriptRunDuration() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
   END_TIME=$(date +%s%N)
   ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
+  CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
+  STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
 
   echo "Elapsed time $ELAPSED_TIME ms"
+  echo "Success time checks: $CHECK_OK_COUNT"
+  echo "Stop time checks: $STOP_OK_COUNT"
 
   assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt 3000 ]"
 }
@@ -295,8 +327,12 @@ testZabbixDiscoverRunDuration() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   END_TIME=$(date +%s%N)
   ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
+  CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
+  STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
 
   echo "Elapsed time $ELAPSED_TIME ms"
+  echo "Success time checks: $CHECK_OK_COUNT"
+  echo "Stop time checks: $STOP_OK_COUNT"
 
   assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt 3000 ]"
 }
@@ -384,31 +420,8 @@ testZabbixDiscoverNumberOfOndemandPoolsCold() {
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsHot() {
-  # We must start all the pools
-  POOL_URL="/php-fpm-status"
   PHP_COUNT=$(getNumberOfPHPVersions)
-
-  PHP_LIST=$(sudo find /etc/php/ -name 'www.conf' -type f)
-  while IFS= read -r pool; do
-    if [[ -n $pool ]]; then
-      POOL_DIR=$(dirname "$pool")
-      PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
-
-      for ((c = 1; c <= MAX_POOLS; c++)); do
-        POOL_NAME="ondemand$c"
-        POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
-
-        PHP_STATUS=$(
-          SCRIPT_NAME=$POOL_URL \
-          SCRIPT_FILENAME=$POOL_URL \
-          QUERY_STRING=json \
-          REQUEST_METHOD=GET \
-          sudo cgi-fcgi -bind -connect "$POOL_SOCKET" 2>/dev/null
-        )
-        assertNotNull "Failed to connect to $POOL_SOCKET" "$PHP_STATUS"
-      done
-    fi
-  done <<<"$PHP_LIST"
+  startOndemandPoolsCache
 
   DATA=$(discoverAllZabbix)
   STATUS=$?
@@ -421,6 +434,39 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
   PHP_COUNT=$(getNumberOfPHPVersions)
   POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
   assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+}
+
+testZabbixDiscoverNumberOfOndemandPoolsCache() {
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  startOndemandPoolsCache
+
+  DATA=$(discoverAllZabbix)
+  STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo "$DATA"
+  fi
+  assertEquals "Failed to discover all data (initial check)" "0" "$STATUS"
+
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  assertEquals "Number of pools mismatch (initial check)" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+
+  WAIT_TIMEOUT=$(echo "$ONDEMAND_TIMEOUT * 2" | bc)
+  sleep "$WAIT_TIMEOUT"
+
+  DATA_CACHE=$(discoverAllZabbix)
+  STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo "$DATA"
+  fi
+  assertEquals "Failed to discover all data (final check)" "0" "$STATUS"
+
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
+  PHP_COUNT=$(getNumberOfPHPVersions)
+  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  assertEquals "Number of pools mismatch (final check)" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+  assertEquals "Data mismatch" "$DATA" "$DATA_CACHE"
 }
 
 testZabbixDiscoverNumberOfIPPools() {
