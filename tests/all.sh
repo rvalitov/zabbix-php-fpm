@@ -308,18 +308,11 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
         POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
 
         PHP_STATUS=$(
-          SCRIPT_NAME=$POOL_SOCKET \
-          SCRIPT_FILENAME=$POOL_SOCKET \
+          SCRIPT_NAME=$POOL_URL \
+          SCRIPT_FILENAME=$POOL_URL \
           QUERY_STRING=json \
           REQUEST_METHOD=GET \
-          sudo cgi-fcgi -bind -connect "$POOL_URL" 2>/dev/null
-        )
-        PHP_STATUS=$(
-          SCRIPT_NAME=$POOL_SOCKET \
-          SCRIPT_FILENAME=$POOL_SOCKET \
-          QUERY_STRING=json \
-          REQUEST_METHOD=GET \
-          sudo cgi-fcgi -bind -connect "$POOL_URL" 2>/dev/null
+          sudo cgi-fcgi -bind -connect "$POOL_SOCKET" 2>/dev/null
         )
         assertNotNull "Failed to connect to $POOL_SOCKET" "$PHP_STATUS"
       done
