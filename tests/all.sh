@@ -313,12 +313,13 @@ testDiscoverScriptRunDuration() {
   ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
+  MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
   echo "Elapsed time $ELAPSED_TIME ms"
   echo "Success time checks: $CHECK_OK_COUNT"
   echo "Stop time checks: $STOP_OK_COUNT"
 
-  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt 3000 ]"
+  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
 }
 
 testZabbixDiscoverRunDuration() {
@@ -331,12 +332,13 @@ testZabbixDiscoverRunDuration() {
   ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
+  MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
   echo "Elapsed time $ELAPSED_TIME ms"
   echo "Success time checks: $CHECK_OK_COUNT"
   echo "Stop time checks: $STOP_OK_COUNT"
 
-  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt 3000 ]"
+  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
 }
 
 testDiscoverScriptDoubleRun() {
