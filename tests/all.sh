@@ -209,7 +209,23 @@ testZabbixDiscoverReturnsData() {
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
 }
 
-function discoverAll() {
+testDiscoverScriptSleep() {
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
+  CHECK_OK=$(echo "$DATA" | grep -F "Check execution time OK")
+  STOP_OK=$(echo "$DATA" | grep -F "stop required")
+
+  assertNotNull "No success time checks detected" "$CHECK_OK"
+  assertNotNull "No success stop checks detected" "$STOP_OK"
+}
+
+testDiscoverScriptDoubleRun() {
+  DATA_FIRST=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
+  DATA_SECOND=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
+
+  assertNotEquals "Multiple discovery routines provide the same results" "$DATA_FIRST" "$DATA_SECOND"
+}
+
+function discoverAllZabbix() {
   DATA_OLD=$1
   DATA_COUNT=$2
 
@@ -228,12 +244,12 @@ function discoverAll() {
       echo "Data new: $DATA"
       return 1
     fi
-    discoverAll "$DATA" "$DATA_COUNT"
+    discoverAllZabbix "$DATA" "$DATA_COUNT"
   fi
 }
 
 testZabbixDiscoverNumberOfStaticPools() {
-  DATA=$(discoverAll)
+  DATA=$(discoverAllZabbix)
   STATUS=$?
   if [[ $STATUS -ne 0 ]]; then
     echo "$DATA"
@@ -247,7 +263,7 @@ testZabbixDiscoverNumberOfStaticPools() {
 }
 
 testZabbixDiscoverNumberOfDynamicPools() {
-  DATA=$(discoverAll)
+  DATA=$(discoverAllZabbix)
   STATUS=$?
   if [[ $STATUS -ne 0 ]]; then
     echo "$DATA"
@@ -261,7 +277,7 @@ testZabbixDiscoverNumberOfDynamicPools() {
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsCold() {
-  DATA=$(discoverAll)
+  DATA=$(discoverAllZabbix)
   STATUS=$?
   if [[ $STATUS -ne 0 ]]; then
     echo "$DATA"
@@ -288,16 +304,19 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
         POOL_NAME="ondemand$c"
         POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
 
-        SCRIPT_NAME=$POOL_SOCKET \
-        SCRIPT_FILENAME=$POOL_SOCKET \
-        QUERY_STRING=json \
-        REQUEST_METHOD=GET \
-        sudo cgi-fcgi -bind -connect "$POOL_URL" 2>/dev/null
+        PHP_STATUS=$(
+          SCRIPT_NAME=$POOL_SOCKET \
+          SCRIPT_FILENAME=$POOL_SOCKET \
+          QUERY_STRING=json \
+          REQUEST_METHOD=GET \
+          sudo cgi-fcgi -bind -connect "$POOL_URL" 2>/dev/null
+        )
+        assertNotNull "Failed to connect to $POOL_SOCKET" "$PHP_STATUS"
       done
     fi
   done <<<"$PHP_LIST"
 
-  DATA=$(discoverAll)
+  DATA=$(discoverAllZabbix)
   STATUS=$?
   if [[ $STATUS -ne 0 ]]; then
     echo "$DATA"
@@ -311,7 +330,7 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
 }
 
 testZabbixDiscoverNumberOfIPPools() {
-  DATA=$(discoverAll)
+  DATA=$(discoverAllZabbix)
   STATUS=$?
   if [[ $STATUS -ne 0 ]]; then
     echo "$DATA"
@@ -325,7 +344,7 @@ testZabbixDiscoverNumberOfIPPools() {
 }
 
 testZabbixDiscoverNumberOfPortPools() {
-  DATA=$(discoverAll)
+  DATA=$(discoverAllZabbix)
   STATUS=$?
   if [[ $STATUS -ne 0 ]]; then
     echo "$DATA"
@@ -341,8 +360,8 @@ testZabbixDiscoverNumberOfPortPools() {
 #This test should be last in Zabbix tests
 testZabbixDiscoverTimeout() {
   #Create lots of pools
-  MAX_POOLS=100
-  MAX_PORTS=100
+  MAX_POOLS=20
+  MAX_PORTS=20
   setupPools
 
   testZabbixDiscoverReturnsData

@@ -301,7 +301,7 @@ function SavePrintResults() {
   ${S_PRINTF} "%s\n" "${PENDING_LIST[@]}" >"$PENDING_FILE"
 
   #We must sort the cache list
-  readarray -t CACHE < <(for a in "${CACHE[@]}"; do echo "$a"; done | sort)
+  readarray -t CACHE < <(for a in "${CACHE[@]}"; do echo "$a"; done | $S_SORT)
 
   if [[ -n $DEBUG_MODE ]]; then
     PrintDebug "List of pools to be saved to cache pools file:"
