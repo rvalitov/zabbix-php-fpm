@@ -79,7 +79,7 @@ setupPool() {
 }
 
 setupPools() {
-  PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
+  PHP_LIST=$(sudo find /etc/php/ -name 'www.conf' -type f)
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
       setupPool "$pool"
@@ -88,7 +88,7 @@ setupPools() {
 }
 
 getNumberOfPHPVersions() {
-  PHP_COUNT=$(find /etc/php/ -name 'www.conf' -type f | wc -l)
+  PHP_COUNT=$(sudo find /etc/php/ -name 'www.conf' -type f | wc -l)
   echo "$PHP_COUNT"
 }
 
@@ -108,7 +108,7 @@ oneTimeSetUp() {
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_status.sh" "/etc/zabbix"
-  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 
@@ -122,6 +122,11 @@ oneTimeSetUp() {
   setupPools
 
   echo "All done, starting tests..."
+}
+
+tearDown() {
+  restoreUserParameters
+  sudo service zabbix-agent restart
 }
 
 testZabbixGetInstalled() {
@@ -225,9 +230,40 @@ testDiscoverScriptSleep() {
   assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
 }
 
+function getUserParameters() {
+  sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f | head -n1
+}
+
+function restoreUserParameters() {
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
+}
+
+testZabbixDiscoverSleep() {
+  #Add sleep
+  PARAMS_FILE=$(getUserParameters)
+  sudo sed -i 's#zabbix_php_fpm_discovery#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
+  sudo cat "$PARAMS_FILE"
+  sudo service zabbix-agent restart
+
+  testZabbixDiscoverReturnsData
+}
+
 testDiscoverScriptDoubleRun() {
   DATA_FIRST=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
   DATA_SECOND=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
+
+  assertNotEquals "Multiple discovery routines provide the same results" "$DATA_FIRST" "$DATA_SECOND"
+}
+
+testZabbixDiscoverDoubleRun() {
+  #Add sleep
+  PARAMS_FILE=$(getUserParameters)
+  sudo sed -i 's#zabbix_php_fpm_discovery#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
+  sudo cat "$PARAMS_FILE"
+  sudo service zabbix-agent restart
+
+  DATA_FIRST=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
 
   assertNotEquals "Multiple discovery routines provide the same results" "$DATA_FIRST" "$DATA_SECOND"
 }
@@ -301,7 +337,7 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
   POOL_URL="/php-fpm-status"
   PHP_COUNT=$(getNumberOfPHPVersions)
 
-  PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
+  PHP_LIST=$(sudo find /etc/php/ -name 'www.conf' -type f)
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
       POOL_DIR=$(dirname "$pool")
@@ -365,7 +401,7 @@ testZabbixDiscoverNumberOfPortPools() {
 }
 
 #This test should be last in Zabbix tests
-testDiscoverScriptTimeout() {
+testDiscoverScriptManyPools() {
   #Create lots of pools
   MAX_POOLS=20
   MAX_PORTS=20
@@ -374,7 +410,7 @@ testDiscoverScriptTimeout() {
   testDiscoverScriptReturnsData
 }
 
-testZabbixDiscoverTimeout() {
+testZabbixDiscoverManyPools() {
   testZabbixDiscoverReturnsData
 }
 
