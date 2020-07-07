@@ -5,7 +5,8 @@
 
 MAX_POOLS=3
 MAX_PORTS=3
-MIN_PORT=9000
+MIN_PORT=49001
+MAX_PORTS_COUNT=100
 TEST_SOCKET=""
 ONDEMAND_TIMEOUT=60
 ZABBIX_TIMEOUT=10
@@ -84,19 +85,24 @@ setupPool() {
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "ondemand"
   done
 
+  PHP_SERIAL_ID=$(find /etc/php/ -maxdepth 1 -mindepth 1 -type d | sort | grep -n -F "7.3" | cut -d : -f 1)
   #Create TCP port based pools
   #Division on 1 is required to convert from float to integer
-  START_PORT=$(echo "($MIN_PORT + $PHP_VERSION * 100 + 1)/1" | bc)
+  START_PORT=$(echo "($MIN_PORT + $PHP_SERIAL_ID * $MAX_PORTS_COUNT + 1)/1" | bc)
   for ((c = 1; c <= MAX_PORTS; c++)); do
     POOL_NAME="port$c"
     POOL_PORT=$(echo "($START_PORT + $c)/1" | bc)
+    PORT_IS_BUSY=$(sudo lsof -i:$POOL_PORT)
+    assertNull "Port $POOL_PORT is busy" "$PORT_IS_BUSY"
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_PORT" "static"
   done
 
   #Create TCP IPv4 localhost pool
   POOL_NAME="localhost"
-  POOL_PORT=$(echo "($MIN_PORT + $PHP_VERSION * 100)/1" | bc)
+  POOL_PORT=$(echo "($MIN_PORT + $PHP_SERIAL_ID * $MAX_PORTS_COUNT)/1" | bc)
   POOL_SOCKET="127.0.0.1:$POOL_PORT"
+  PORT_IS_BUSY=$(sudo lsof -i:$POOL_PORT)
+  assertNull "Port $POOL_PORT is busy" "$PORT_IS_BUSY"
   copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
 
   echo "List of configured PHP$PHP_VERSION pools:"
