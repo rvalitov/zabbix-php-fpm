@@ -218,7 +218,7 @@ testDiscoverScriptSleep() {
   echo "Success time checks: $CHECK_OK_COUNT"
   echo "Stop time checks: $STOP_OK_COUNT"
 
-  if [[ $CHECK_OK_COUNT -lt 1 ]] || [[ $STOP_OK_COUNT -lt 1 ]];then
+  if [[ $CHECK_OK_COUNT -lt 1 ]] || [[ $STOP_OK_COUNT -lt 1 ]]; then
     echo "$DATA"
   fi
   assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 ]"
@@ -365,12 +365,16 @@ testZabbixDiscoverNumberOfPortPools() {
 }
 
 #This test should be last in Zabbix tests
-testZabbixDiscoverTimeout() {
+testDiscoverScriptTimeout() {
   #Create lots of pools
   MAX_POOLS=20
   MAX_PORTS=20
   setupPools
 
+  testDiscoverScriptReturnsData
+}
+
+testZabbixDiscoverTimeout() {
   testZabbixDiscoverReturnsData
 }
 
