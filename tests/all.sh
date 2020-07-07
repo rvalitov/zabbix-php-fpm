@@ -465,5 +465,13 @@ testZabbixDiscoverManyPools() {
   testZabbixDiscoverReturnsData
 }
 
+testDiscoverScriptManyPoolsRunDuration() {
+  testDiscoverScriptRunDuration
+}
+
+testZabbixDiscoverManyPoolsRunDuration() {
+  testZabbixDiscoverRunDuration
+}
+
 # Load shUnit2.
 . shunit2
