@@ -160,11 +160,11 @@ testPHPIsRunning() {
 }
 
 testStatusScriptSocket() {
-  #Make the test:
+  assertNotNull "Test socket is not defined" "$TEST_SOCKET"
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
-  assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
-  echo "Success test of $PHP_POOL"
+  assertNotNull "Failed to get status from pool $TEST_SOCKET: $DATA" "$IS_OK"
+  echo "Success test of $TEST_SOCKET"
 }
 
 testStatusScriptPort() {
@@ -244,12 +244,17 @@ function restoreUserParameters() {
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
 }
 
-testZabbixDiscoverSleep() {
-  #Add sleep
+function AddSleepToConfig() {
   PARAMS_FILE=$(getUserParameters)
-  sudo sed -i 's#zabbix_php_fpm_discovery#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
+  sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
   sudo cat "$PARAMS_FILE"
   sudo service zabbix-agent restart
+  sleep 2
+}
+
+testZabbixDiscoverSleep() {
+  #Add sleep
+  AddSleepToConfig
 
   testZabbixDiscoverReturnsData
 }
@@ -263,10 +268,7 @@ testDiscoverScriptDoubleRun() {
 
 testZabbixDiscoverDoubleRun() {
   #Add sleep
-  PARAMS_FILE=$(getUserParameters)
-  sudo sed -i 's#zabbix_php_fpm_discovery#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
-  sudo cat "$PARAMS_FILE"
-  sudo service zabbix-agent restart
+  AddSleepToConfig
 
   DATA_FIRST=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
