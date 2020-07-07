@@ -111,6 +111,17 @@ setupPool() {
 
 setupPools() {
   PHP_LIST=$(sudo find /etc/php/ -name 'www.conf' -type f)
+
+  #First we need to stop all PHP-FPM
+  while IFS= read -r pool; do
+    if [[ -n $pool ]]; then
+      POOL_DIR=$(dirname "$pool")
+      PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+      sudo service "php${PHP_VERSION}-fpm" stop
+    fi
+  done <<<"$PHP_LIST"
+
+  #Now we reconfigure them and restart
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
       setupPool "$pool"
