@@ -75,7 +75,7 @@ setupPool() {
   copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
 
   sudo service "php${PHP_VERSION}-fpm" restart
-  sudo systemctl status "php${PHP_VERSION}-fpm.service"
+  sudo systemctl -l status "php${PHP_VERSION}-fpm.service"
 }
 
 setupPools() {
@@ -215,10 +215,14 @@ testDiscoverScriptSleep() {
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
 
-  assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 ]"
   echo "Success time checks: $CHECK_OK_COUNT"
-  assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
   echo "Stop time checks: $STOP_OK_COUNT"
+
+  if [[ $CHECK_OK_COUNT -lt 1 ]] || [[ $STOP_OK_COUNT -lt 1 ]];then
+    echo "$DATA"
+  fi
+  assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 ]"
+  assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
 }
 
 testDiscoverScriptDoubleRun() {
