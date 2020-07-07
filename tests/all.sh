@@ -218,12 +218,13 @@ function discoverAll() {
   fi
 
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  if [[ $DATA_OLD == "$DATA" ]]; then
+  if [[ "$DATA_OLD" == "$DATA" ]]; then
     echo "$DATA"
     return 0
   else
     DATA_COUNT=$(echo "$DATA_COUNT + 1" | bc)
     if [[ $DATA_COUNT -gt 10 ]]; then
+      echo "Data old: $DATA_OLD, data new: $DATA"
       return 1
     fi
     discoverAll "$DATA" "$DATA_COUNT"
@@ -233,6 +234,9 @@ function discoverAll() {
 testZabbixDiscoverNumberOfStaticPools() {
   DATA=$(discoverAll)
   STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo "$DATA"
+  fi
   assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"static' | wc -l)
@@ -244,6 +248,9 @@ testZabbixDiscoverNumberOfStaticPools() {
 testZabbixDiscoverNumberOfDynamicPools() {
   DATA=$(discoverAll)
   STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo "$DATA"
+  fi
   assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"dynamic' | wc -l)
@@ -255,6 +262,9 @@ testZabbixDiscoverNumberOfDynamicPools() {
 testZabbixDiscoverNumberOfOndemandPoolsCold() {
   DATA=$(discoverAll)
   STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo "$DATA"
+  fi
   assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
@@ -286,14 +296,12 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
     fi
   done <<<"$PHP_LIST"
 
-  OLD_DATA=""
-  DATA="1"
-
-  while
-    [[ $OLD_DATA != "$DATA" ]]
-    OLD_DATA="$DATA"
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  do true; done
+  DATA=$(discoverAll)
+  STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo "$DATA"
+  fi
+  assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
@@ -304,6 +312,9 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
 testZabbixDiscoverNumberOfIPPools() {
   DATA=$(discoverAll)
   STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo "$DATA"
+  fi
   assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"localhost",' | wc -l)
@@ -315,6 +326,9 @@ testZabbixDiscoverNumberOfIPPools() {
 testZabbixDiscoverNumberOfPortPools() {
   DATA=$(discoverAll)
   STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo "$DATA"
+  fi
   assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"port' | wc -l)
