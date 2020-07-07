@@ -131,6 +131,13 @@ oneTimeSetUp() {
   echo "All done, starting tests..."
 }
 
+#Called before every test
+setUp() {
+  #Delete all cache files
+  sudo rm -rf "/etc/zabbix/*.cache"
+}
+
+#Called after every test
 tearDown() {
   restoreUserParameters
   sleep 2
