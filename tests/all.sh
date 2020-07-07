@@ -224,7 +224,8 @@ function discoverAll() {
   else
     DATA_COUNT=$(echo "$DATA_COUNT + 1" | bc)
     if [[ $DATA_COUNT -gt 10 ]]; then
-      echo "Data old: $DATA_OLD, data new: $DATA"
+      echo "Data old: $DATA_OLD"
+      echo "Data new: $DATA"
       return 1
     fi
     discoverAll "$DATA" "$DATA_COUNT"
