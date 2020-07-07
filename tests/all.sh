@@ -330,13 +330,9 @@ testZabbixDiscoverRunDuration() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   END_TIME=$(date +%s%N)
   ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
-  CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
-  STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
   MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
   echo "Elapsed time $ELAPSED_TIME ms"
-  echo "Success time checks: $CHECK_OK_COUNT"
-  echo "Stop time checks: $STOP_OK_COUNT"
 
   assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
 }
@@ -516,11 +512,19 @@ testZabbixDiscoverManyPools() {
 }
 
 testDiscoverScriptManyPoolsRunDuration() {
-  testDiscoverScriptRunDuration
+  MAX_RUNS=5
+  for ((c = 1; c <= MAX_RUNS; c++)); do
+    echo "Run #$c..."
+    testDiscoverScriptRunDuration
+  done
 }
 
 testZabbixDiscoverManyPoolsRunDuration() {
-  testZabbixDiscoverRunDuration
+  MAX_RUNS=5
+  for ((c = 1; c <= MAX_RUNS; c++)); do
+    echo "Run #$c..."
+    testZabbixDiscoverRunDuration
+  done
 }
 
 # Load shUnit2.
