@@ -75,6 +75,7 @@ setupPool() {
   copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
 
   sudo service "php${PHP_VERSION}-fpm" restart
+  sudo systemctl status "php${PHP_VERSION}-fpm.service"
 }
 
 setupPools() {

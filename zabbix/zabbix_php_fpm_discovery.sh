@@ -23,7 +23,7 @@ DEBUG_MODE=""
 USE_SLEEP_TIMEOUT=""
 
 #Sleep timeout in seconds
-SLEEP_TIMEOUT="0.7"
+SLEEP_TIMEOUT="0.5"
 
 #Checking all the required executables
 S_PS=$(type -P ps)
@@ -641,11 +641,11 @@ for POOL_ITEM in "${PENDING_LIST[@]}"; do
   if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]]; then
     ProcessPool "$POOL_NAME" "$POOL_SOCKET"
 
-    #Used for debugging:
-    sleepNow
-
     #Confirm that we run not too much time
     CheckExecutionTime
+
+    #Used for debugging:
+    sleepNow
   fi
 done
 
