@@ -18,6 +18,15 @@ function restoreUserParameters() {
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
 }
 
+function AddSleepToConfig() {
+  PARAMS_FILE=$(getUserParameters)
+  sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
+  echo "New UserParameter file:"
+  sudo cat "$PARAMS_FILE"
+  sudo service zabbix-agent restart
+  sleep 2
+}
+
 copyPool() {
   ORIGINAL_FILE=$1
   POOL_NAME=$2
@@ -260,20 +269,36 @@ testDiscoverScriptSleep() {
   assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
 }
 
-function AddSleepToConfig() {
-  PARAMS_FILE=$(getUserParameters)
-  sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
-  echo "New UserParameter file:"
-  sudo cat "$PARAMS_FILE"
-  sudo service zabbix-agent restart
-  sleep 2
-}
-
 testZabbixDiscoverSleep() {
   #Add sleep
   AddSleepToConfig
 
   testZabbixDiscoverReturnsData
+}
+
+testDiscoverScriptRunDuration() {
+  START_TIME=$(date +%s%N)
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
+  END_TIME=$(date +%s%N)
+  ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
+
+  echo "Elapsed time $ELAPSED_TIME ms"
+
+  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt 3000 ]"
+}
+
+testZabbixDiscoverRunDuration() {
+  #Add sleep
+  AddSleepToConfig
+
+  START_TIME=$(date +%s%N)
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  END_TIME=$(date +%s%N)
+  ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
+
+  echo "Elapsed time $ELAPSED_TIME ms"
+
+  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt 3000 ]"
 }
 
 testDiscoverScriptDoubleRun() {
