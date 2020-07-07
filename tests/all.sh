@@ -8,6 +8,16 @@ MAX_PORTS=3
 MIN_PORT=9000
 TEST_SOCKET=""
 
+function getUserParameters() {
+  sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f | head -n1
+}
+
+function restoreUserParameters() {
+  PARAMS_FILE=$(getUserParameters)
+  sudo rm -f $PARAMS_FILE
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
+}
+
 copyPool() {
   ORIGINAL_FILE=$1
   POOL_NAME=$2
@@ -250,14 +260,6 @@ testDiscoverScriptSleep() {
   assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
 }
 
-function getUserParameters() {
-  sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f | head -n1
-}
-
-function restoreUserParameters() {
-  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
-}
-
 function AddSleepToConfig() {
   PARAMS_FILE=$(getUserParameters)
   sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
@@ -294,6 +296,7 @@ testZabbixDiscoverDoubleRun() {
 function discoverAllZabbix() {
   DATA_OLD=$1
   DATA_COUNT=$2
+  MAX_CHECKS=50
 
   if [[ -z $DATA_COUNT ]]; then
     DATA_COUNT=0
@@ -305,7 +308,7 @@ function discoverAllZabbix() {
     return 0
   else
     DATA_COUNT=$(echo "$DATA_COUNT + 1" | bc)
-    if [[ $DATA_COUNT -gt 10 ]]; then
+    if [[ $DATA_COUNT -gt $MAX_CHECKS ]]; then
       echo "Data old: $DATA_OLD"
       echo "Data new: $DATA"
       return 1
