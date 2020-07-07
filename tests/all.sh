@@ -9,7 +9,7 @@ MIN_PORT=49001
 MAX_PORTS_COUNT=100
 TEST_SOCKET=""
 ONDEMAND_TIMEOUT=60
-ZABBIX_TIMEOUT=10
+ZABBIX_TIMEOUT=20
 
 function getUserParameters() {
   sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f | head -n1
