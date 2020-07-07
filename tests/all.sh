@@ -78,9 +78,12 @@ setupPool() {
   POOL_SOCKET="127.0.0.1:$POOL_PORT"
   copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
 
+  echo "List of configured PHP$PHP_VERSION pools:"
   sudo ls -l "$POOL_DIR"
   sudo service "php${PHP_VERSION}-fpm" restart
   sleep 3
+
+  echo "List of running PHP$PHP_VERSION pools:"
   sudo systemctl -l status "php${PHP_VERSION}-fpm.service"
   sleep 2
 }
@@ -134,7 +137,8 @@ oneTimeSetUp() {
 #Called before every test
 setUp() {
   #Delete all cache files
-  sudo rm -rf "/etc/zabbix/*.cache"
+  sudo rm -f "/etc/zabbix/php_fpm_results.cache"
+  sudo rm -f "/etc/zabbix/php_fpm_pending.cache"
 }
 
 #Called after every test
@@ -257,6 +261,7 @@ function restoreUserParameters() {
 function AddSleepToConfig() {
   PARAMS_FILE=$(getUserParameters)
   sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
+  echo "New UserParameter file:"
   sudo cat "$PARAMS_FILE"
   sudo service zabbix-agent restart
   sleep 2
