@@ -78,8 +78,11 @@ setupPool() {
   POOL_SOCKET="127.0.0.1:$POOL_PORT"
   copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
 
+  sudo ls -l "$POOL_DIR"
   sudo service "php${PHP_VERSION}-fpm" restart
+  sleep 3
   sudo systemctl -l status "php${PHP_VERSION}-fpm.service"
+  sleep 2
 }
 
 setupPools() {
