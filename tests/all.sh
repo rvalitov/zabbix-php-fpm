@@ -193,7 +193,7 @@ testDiscoverScriptDebug() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "nosleep" "/php-fpm-status")
   NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  if [[ $PHP_COUNT != $NUMBER_OF_ERRORS ]]; then
+  if [[ $PHP_COUNT != "$NUMBER_OF_ERRORS" ]]; then
     ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
     echo "Errors list:"
     echo "$ERRORS_LIST"
@@ -209,15 +209,31 @@ testZabbixDiscoverReturnsData() {
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
 }
 
-testZabbixDiscoverNumberOfStaticPools() {
-  OLD_DATA=""
-  DATA="1"
+function discoverAll() {
+  DATA_OLD=$1
+  DATA_COUNT=$2
 
-  while
-    [[ $OLD_DATA != "$DATA" ]]
-    OLD_DATA="$DATA"
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  do true; done
+  if [[ -z $DATA_COUNT ]]; then
+    DATA_COUNT=0
+  fi
+
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  if [[ $DATA_OLD == "$DATA" ]]; then
+    echo "$DATA"
+    return 0
+  else
+    DATA_COUNT=$(echo "$DATA_COUNT + 1" | bc)
+    if [[ $DATA_COUNT -gt 10 ]]; then
+      return 1
+    fi
+    discoverAll "$DATA" "$DATA_COUNT"
+  fi
+}
+
+testZabbixDiscoverNumberOfStaticPools() {
+  DATA=$(discoverAll)
+  STATUS=$?
+  assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"static' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
@@ -226,14 +242,9 @@ testZabbixDiscoverNumberOfStaticPools() {
 }
 
 testZabbixDiscoverNumberOfDynamicPools() {
-  OLD_DATA=""
-  DATA="1"
-
-  while
-    [[ $OLD_DATA != "$DATA" ]]
-    OLD_DATA="$DATA"
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  do true; done
+  DATA=$(discoverAll)
+  STATUS=$?
+  assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"dynamic' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
@@ -242,14 +253,9 @@ testZabbixDiscoverNumberOfDynamicPools() {
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsCold() {
-  OLD_DATA=""
-  DATA="1"
-
-  while
-    [[ $OLD_DATA != "$DATA" ]]
-    OLD_DATA="$DATA"
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  do true; done
+  DATA=$(discoverAll)
+  STATUS=$?
+  assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
   #If the pools are not started then we have 0 here:
@@ -296,14 +302,9 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
 }
 
 testZabbixDiscoverNumberOfIPPools() {
-  OLD_DATA=""
-  DATA="1"
-
-  while
-    [[ $OLD_DATA != "$DATA" ]]
-    OLD_DATA="$DATA"
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  do true; done
+  DATA=$(discoverAll)
+  STATUS=$?
+  assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"localhost",' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
@@ -312,14 +313,9 @@ testZabbixDiscoverNumberOfIPPools() {
 }
 
 testZabbixDiscoverNumberOfPortPools() {
-  OLD_DATA=""
-  DATA="1"
-
-  while
-    [[ $OLD_DATA != "$DATA" ]]
-    OLD_DATA="$DATA"
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  do true; done
+  DATA=$(discoverAll)
+  STATUS=$?
+  assertEquals "Failed to discover all data" "0" "$STATUS"
 
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"port' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
