@@ -338,12 +338,12 @@ function CheckExecutionTime() {
   ELAPSED_TIME=$(echo "$CURRENT_TIME - $START_TIME" | $S_BC)
   if [[ $ELAPSED_TIME -lt $MAX_EXECUTION_TIME ]]; then
     #All good, we can continue
-    PrintDebug "Check execution time OK"
+    PrintDebug "Check execution time OK, elapsed $ELAPSED_TIME"
     return 1
   fi
 
   #We need to save our state and exit
-  PrintDebug "Check execution time: stop required"
+  PrintDebug "Check execution time: stop required, elapsed $ELAPSED_TIME"
 
   SavePrintResults
 
