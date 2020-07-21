@@ -14,13 +14,13 @@ PHP_SOCKET_DIR=""
 PHP_ETC_DIR=""
 
 function getUserParameters() {
-  sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f | head -n1
+  sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f 2>/dev/null | sort | head -n1
 }
 
 function restoreUserParameters() {
   PARAMS_FILE=$(getUserParameters)
   sudo rm -f $PARAMS_FILE
-  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d 2>/dev/null | sort | head -n1)"
 }
 
 function AddSleepToConfig() {
@@ -118,6 +118,8 @@ setupPool() {
   EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
 
+  PHP_DIR=$(getEtcPHPDirectory)
+
   #Delete all active pools except www.conf:
   sudo find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
 
@@ -133,17 +135,17 @@ setupPool() {
 
   for ((c = 1; c <= MAX_POOLS; c++)); do
     POOL_NAME="dynamic$c"
-    POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+    POOL_SOCKET="${PHP_RUN_DIR}php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "dynamic"
   done
 
   for ((c = 1; c <= MAX_POOLS; c++)); do
     POOL_NAME="ondemand$c"
-    POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+    POOL_SOCKET="${PHP_RUN_DIR}php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "ondemand"
   done
 
-  PHP_SERIAL_ID=$(find /etc/php/ -maxdepth 1 -mindepth 1 -type d | sort | grep -n -F "$PHP_VERSION" | cut -d : -f 1)
+  PHP_SERIAL_ID=$(find "$PHP_DIR" -maxdepth 1 -mindepth 1 -type d | sort | grep -n -F "$PHP_VERSION" | head -n1 | cut -d : -f 1)
   #Create TCP port based pools
   #Division on 1 is required to convert from float to integer
   START_PORT=$(echo "($MIN_PORT + $PHP_SERIAL_ID * $MAX_PORTS_COUNT + 1)/1" | bc)
