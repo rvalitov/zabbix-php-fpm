@@ -4,6 +4,56 @@ language: bash
 jobs:
   include:
     - os: linux
+      dist: trusty
+      name: "Zabbix 4.0 @ Ubuntu 14 trusty, PHP default"
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.0/ubuntu trusty main'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - ca-certificates
+            - curl
+            - grep
+            - sed
+            - gawk
+            - lsof
+            - jq
+            - libfcgi-bin
+            - unzip
+            - zabbix-agent
+            - zabbix-get
+            - php-fpm
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        - bash --version
+    - os: linux
+      dist: xenial
+      name: "Zabbix 4.0 @ Ubuntu 16 xenial, PHP default"
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.0/ubuntu xenial main'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - ca-certificates
+            - curl
+            - grep
+            - sed
+            - gawk
+            - lsof
+            - jq
+            - libfcgi-bin
+            - unzip
+            - zabbix-agent
+            - zabbix-get
+            - php-fpm
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        - bash --version
+    - os: linux
       dist: bionic
       name: "Zabbix 4.0 @ Ubuntu 18 bionic, PHP default"
       arch: amd64
@@ -27,6 +77,7 @@ jobs:
             - php-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        - bash --version
     - os: linux
       dist: bionic
       name: "Zabbix 4.4 @ Ubuntu 18 bionic, PHP default"
@@ -51,6 +102,7 @@ jobs:
             - php-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        - bash --version
     - os: linux
       dist: bionic
       name: "Zabbix 5.0 @ Ubuntu 18 bionic, PHP default"
@@ -75,6 +127,7 @@ jobs:
             - php-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        - bash --version
     - os: linux
       dist: bionic
       name: "Zabbix 4.0 @ Ubuntu 18 bionic, PHP 7.0-7.4"
@@ -104,6 +157,7 @@ jobs:
             - php7.4-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        - bash --version
     - os: linux
       dist: bionic
       name: "Zabbix 4.4 @ Ubuntu 18 bionic, PHP 7.0-7.4"
@@ -133,6 +187,7 @@ jobs:
             - php7.4-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        - bash --version
     - os: linux
       dist: bionic
       name: "Zabbix 5.0 @ Ubuntu 18 bionic, PHP 7.0-7.4"
@@ -162,6 +217,7 @@ jobs:
             - php7.4-fpm
       before_script:
         - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        - bash --version
 
 script: bash tests/all.sh
 notifications:
