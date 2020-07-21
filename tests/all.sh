@@ -62,7 +62,7 @@ function getRunPHPDirectory() {
   for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
     RESULT_DIR=$(find "$PHP_TEST_DIR" -name 'php*-fpm.sock' -type s -exec dirname {} \; 2>/dev/null | sort | head -n1)
     if [[ -d "$RESULT_DIR" ]]; then
-      echo "$RESULT_DIR"
+      echo "$RESULT_DIR/"
       return 0
     fi
   done
