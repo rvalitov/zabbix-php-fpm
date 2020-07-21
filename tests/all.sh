@@ -7,6 +7,15 @@ MAX_POOLS=3
 MAX_PORTS=3
 MIN_PORT=9000
 
+function getPHPVersion() {
+  TEST_STRING=$1
+  PHP_VERSION=$(echo "$TEST_STRING" | grep -oP "(\d\.\d)")
+  if [[ -z "$PHP_VERSION" ]]; then
+    PHP_VERSION=$(echo "$TEST_STRING" | grep -oP "php(\d)" | grep -oP "(\d)")
+  fi
+  echo "$PHP_VERSION"
+}
+
 function getEtcPHPDirectory() {
   LIST_OF_DIRS=(
     "/etc/php/"
@@ -44,7 +53,7 @@ copyPool() {
   POOL_SOCKET=$3
   POOL_TYPE=$4
   POOL_DIR=$(dirname "${ORIGINAL_FILE}")
-  PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+  PHP_VERSION=$(getPHPVersion "$POOL_DIR")
 
   NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
   sudo cp "$ORIGINAL_FILE" "$NEW_POOL_FILE"
@@ -62,7 +71,7 @@ copyPool() {
 setupPool() {
   POOL_FILE=$1
   POOL_DIR=$(dirname "${POOL_FILE}")
-  PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+  PHP_VERSION=$(getPHPVersion "$POOL_DIR")
 
   PHP_RUN_DIR=$(getRunPHPDirectory)
   EXIT_CODE=$?
@@ -135,8 +144,8 @@ getAnySocket() {
   #Get any socket of PHP-FPM:
   PHP_FIRST=$(find "$PHP_DIR" -name 'www.conf' -type f | sort | head -n1)
   assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
-  PHP_VERSION=$(echo "$PHP_FIRST" | grep -oP "(\d\.\d)")
-  assertNotNull "Failed to get PHP version" "$PHP_VERSION"
+  PHP_VERSION=$(getPHPVersion "$PHP_FIRST")
+  assertNotNull "Failed to get PHP version for $PHP_FIRST" "$PHP_VERSION"
   PHP_POOL=$(find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s 2>/dev/null | sort | head -n1)
   assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
   echo "$PHP_POOL"
