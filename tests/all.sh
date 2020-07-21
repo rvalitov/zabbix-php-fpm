@@ -10,6 +10,8 @@ MAX_PORTS_COUNT=100
 TEST_SOCKET=""
 ONDEMAND_TIMEOUT=60
 ZABBIX_TIMEOUT=20
+PHP_SOCKET_DIR=""
+PHP_ETC_DIR=""
 
 function getUserParameters() {
   sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f | head -n1
@@ -40,13 +42,19 @@ function getPHPVersion() {
 }
 
 function getEtcPHPDirectory() {
+  if [[ -n "$PHP_ETC_DIR" ]]; then
+    echo "$PHP_ETC_DIR"
+    return 0
+  fi
+
   LIST_OF_DIRS=(
     "/etc/php/"
     "/etc/php5/"
   )
   for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
     if [[ -d "$PHP_TEST_DIR" ]]; then
-      echo "$PHP_TEST_DIR"
+      PHP_ETC_DIR=$PHP_TEST_DIR
+      echo "$PHP_ETC_DIR"
       return 0
     fi
   done
@@ -55,6 +63,11 @@ function getEtcPHPDirectory() {
 }
 
 function getRunPHPDirectory() {
+  if [[ -n "$PHP_SOCKET_DIR" ]]; then
+    echo "$PHP_SOCKET_DIR"
+    return 0
+  fi
+
   LIST_OF_DIRS=(
     "/run/"
     "/var/run/"
@@ -62,7 +75,8 @@ function getRunPHPDirectory() {
   for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
     RESULT_DIR=$(find "$PHP_TEST_DIR" -name 'php*-fpm.sock' -type s -exec dirname {} \; 2>/dev/null | sort | head -n1)
     if [[ -d "$RESULT_DIR" ]]; then
-      echo "$RESULT_DIR/"
+      PHP_SOCKET_DIR="$RESULT_DIR/"
+      echo "$PHP_SOCKET_DIR"
       return 0
     fi
   done
@@ -164,6 +178,9 @@ setupPools() {
   EXIT_CODE=$?
   assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
   PHP_LIST=$(sudo find "$PHP_DIR" -name 'www.conf' -type f)
+
+  #Call to detect and cache PHP run directory, we need to call it before we stop all PHP-FPM
+  getRunPHPDirectory
 
   #First we need to stop all PHP-FPM
   while IFS= read -r pool; do
