@@ -20,7 +20,7 @@ jobs:
             - gawk
             - lsof
             - jq
-            - libfcgi-bin
+            - libfcgi0ldbl
             - unzip
             - zabbix-agent
             - zabbix-get
@@ -45,7 +45,7 @@ jobs:
             - gawk
             - lsof
             - jq
-            - libfcgi-bin
+            - libfcgi0ldbl
             - unzip
             - zabbix-agent
             - zabbix-get
