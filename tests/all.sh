@@ -8,34 +8,33 @@ MAX_PORTS=3
 MIN_PORT=9000
 
 function getEtcPHPDirectory() {
-  PHP_TEST_DIR="/etc/php/"
+  LIST_OF_DIRS=(
+    "/etc/php/"
+    "/etc/php5/"
+  )
+  for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
+    if [[ -d "$PHP_TEST_DIR" ]]; then
+      echo "$PHP_TEST_DIR"
+      return 0
+    fi
+  done
 
-  if [[ -d "$PHP_TEST_DIR" ]]; then
-    echo "$PHP_TEST_DIR"
-    return 0
-  fi
-
-  PHP_TEST_DIR="/etc/php5/"
-  if [[ -d "$PHP_TEST_DIR" ]]; then
-    echo "$PHP_TEST_DIR"
-    return 0
-  fi
   return 1
 }
 
 function getRunPHPDirectory() {
-  PHP_TEST_DIR="/run/php/"
+  LIST_OF_DIRS=(
+    "/run/"
+    "/var/run/"
+  )
+  for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
+    RESULT_DIR=$(find "$PHP_TEST_DIR" -name 'php*-fpm.sock' -type s -exec dirname {} \; | sort | head -n1)
+    if [[ -d "$RESULT_DIR" ]]; then
+      echo "$RESULT_DIR"
+      return 0
+    fi
+  done
 
-  if [[ -d "$PHP_TEST_DIR" ]]; then
-    echo "$PHP_TEST_DIR"
-    return 0
-  fi
-
-  PHP_TEST_DIR="/run/php5/"
-  if [[ -d "$PHP_TEST_DIR" ]]; then
-    echo "$PHP_TEST_DIR"
-    return 0
-  fi
   return 1
 }
 
