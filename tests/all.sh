@@ -133,11 +133,11 @@ getAnySocket() {
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
 
   #Get any socket of PHP-FPM:
-  PHP_FIRST=$(find "$PHP_DIR" -name 'www.conf' -type f | head -n1)
+  PHP_FIRST=$(find "$PHP_DIR" -name 'www.conf' -type f | sort | head -n1)
   assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
   PHP_VERSION=$(echo "$PHP_FIRST" | grep -oP "(\d\.\d)")
   assertNotNull "Failed to get PHP version" "$PHP_VERSION"
-  PHP_POOL=$(find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s | head -n1)
+  PHP_POOL=$(find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s 2>/dev/null | sort | head -n1)
   assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
   echo "$PHP_POOL"
 }
@@ -158,7 +158,7 @@ oneTimeSetUp() {
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_status.sh" "/etc/zabbix"
-  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | sort | head -n1)"
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 
