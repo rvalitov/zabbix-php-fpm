@@ -7,6 +7,38 @@ MAX_POOLS=3
 MAX_PORTS=3
 MIN_PORT=9000
 
+function getEtcPHPDirectory() {
+  PHP_TEST_DIR="/etc/php/"
+
+  if [[ -d "$PHP_TEST_DIR" ]]; then
+    echo "$PHP_TEST_DIR"
+    return 0
+  fi
+
+  PHP_TEST_DIR="/etc/php5/"
+  if [[ -d "$PHP_TEST_DIR" ]]; then
+    echo "$PHP_TEST_DIR"
+    return 0
+  fi
+  return 1
+}
+
+function getRunPHPDirectory() {
+  PHP_TEST_DIR="/run/php/"
+
+  if [[ -d "$PHP_TEST_DIR" ]]; then
+    echo "$PHP_TEST_DIR"
+    return 0
+  fi
+
+  PHP_TEST_DIR="/run/php5/"
+  if [[ -d "$PHP_TEST_DIR" ]]; then
+    echo "$PHP_TEST_DIR"
+    return 0
+  fi
+  return 1
+}
+
 copyPool() {
   ORIGINAL_FILE=$1
   POOL_NAME=$2
@@ -33,6 +65,10 @@ setupPool() {
   POOL_DIR=$(dirname "${POOL_FILE}")
   PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
 
+  PHP_RUN_DIR=$(getRunPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
+
   #Delete all active pools except www.conf:
   find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
 
@@ -44,7 +80,7 @@ setupPool() {
   #Create new socket pools
   for ((c = 1; c <= MAX_POOLS; c++)); do
     POOL_NAME="socket$c"
-    POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+    POOL_SOCKET="${PHP_RUN_DIR}php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
   done
 
@@ -67,7 +103,11 @@ setupPool() {
 }
 
 setupPools() {
-  PHP_LIST=$(find /etc/php/ -name 'www.conf' -type f)
+  PHP_DIR=$(getEtcPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+
+  PHP_LIST=$(find "$PHP_DIR" -name 'www.conf' -type f)
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
       setupPool "$pool"
@@ -76,17 +116,29 @@ setupPools() {
 }
 
 getNumberOfPHPVersions() {
-  PHP_COUNT=$(find /etc/php/ -name 'www.conf' -type f | wc -l)
+  PHP_DIR=$(getEtcPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+
+  PHP_COUNT=$(find "$PHP_DIR" -name 'www.conf' -type f | wc -l)
   echo "$PHP_COUNT"
 }
 
 getAnySocket() {
+  PHP_DIR=$(getEtcPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+
+  PHP_RUN_DIR=$(getRunPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
+
   #Get any socket of PHP-FPM:
-  PHP_FIRST=$(find /etc/php/ -name 'www.conf' -type f | head -n1)
+  PHP_FIRST=$(find "$PHP_DIR" -name 'www.conf' -type f | head -n1)
   assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
   PHP_VERSION=$(echo "$PHP_FIRST" | grep -oP "(\d\.\d)")
   assertNotNull "Failed to get PHP version" "$PHP_VERSION"
-  PHP_POOL=$(find /run/php/ -name "php${PHP_VERSION}*.sock" -type s | head -n1)
+  PHP_POOL=$(find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s | head -n1)
   assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
   echo "$PHP_POOL"
 }
