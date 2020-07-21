@@ -88,10 +88,14 @@ function getEtcPHPDirectory() {
   for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
     if [[ -d "$PHP_TEST_DIR" ]]; then
       PHP_ETC_DIR=$PHP_TEST_DIR
-      echo "$PHP_ETC_DIR"
-      return 0
+      break
     fi
   done
+
+  if [[ -n "$PHP_ETC_DIR" ]]; then
+    echo "$PHP_ETC_DIR"
+    return 0
+  fi
 
   return 1
 }
@@ -107,13 +111,17 @@ function getRunPHPDirectory() {
     "/var/run/"
   )
   for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
-    RESULT_DIR=$(find "$PHP_TEST_DIR" -name 'php*-fpm.sock' -type s -exec dirname {} \; 2>/dev/null | sort | head -n1)
+    RESULT_DIR=$(sudo find "$PHP_TEST_DIR" -name 'php*-fpm.sock' -type s -exec dirname {} \; 2>/dev/null | sort | head -n1)
     if [[ -d "$RESULT_DIR" ]]; then
       PHP_SOCKET_DIR="$RESULT_DIR/"
-      echo "$PHP_SOCKET_DIR"
-      return 0
+      break
     fi
   done
+
+  if [[ -n "$PHP_SOCKET_DIR" ]]; then
+    echo "$PHP_SOCKET_DIR"
+    return 0
+  fi
 
   return 1
 }
@@ -185,7 +193,7 @@ setupPool() {
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "ondemand"
   done
 
-  PHP_SERIAL_ID=$(find "$PHP_DIR" -maxdepth 1 -mindepth 1 -type d | sort | grep -n -F "$PHP_VERSION" | head -n1 | cut -d : -f 1)
+  PHP_SERIAL_ID=$(sudo find "$PHP_DIR" -maxdepth 1 -mindepth 1 -type d | sort | grep -n -F "$PHP_VERSION" | head -n1 | cut -d : -f 1)
   #Create TCP port based pools
   #Division on 1 is required to convert from float to integer
   START_PORT=$(echo "($MIN_PORT + $PHP_SERIAL_ID * $MAX_PORTS_COUNT + 1)/1" | bc)
@@ -253,7 +261,7 @@ getNumberOfPHPVersions() {
   assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
   assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
-  PHP_COUNT=$(find "$PHP_DIR" -name 'www.conf' -type f | wc -l)
+  PHP_COUNT=$(sudo find "$PHP_DIR" -name 'www.conf' -type f | wc -l)
   echo "$PHP_COUNT"
 }
 
@@ -307,11 +315,11 @@ getAnySocket() {
   assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
   #Get any socket of PHP-FPM:
-  PHP_FIRST=$(find "$PHP_DIR" -name 'www.conf' -type f | sort | head -n1)
+  PHP_FIRST=$(sudo find "$PHP_DIR" -name 'www.conf' -type f | sort | head -n1)
   assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
   PHP_VERSION=$(getPHPVersion "$PHP_FIRST")
   assertNotNull "Failed to detect PHP version from string '$PHP_FIRST'" "$PHP_VERSION"
-  PHP_POOL=$(find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s 2>/dev/null | sort | head -n1)
+  PHP_POOL=$(sudo find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s 2>/dev/null | sort | head -n1)
   assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
   echo "$PHP_POOL"
 }
@@ -332,7 +340,7 @@ oneTimeSetUp() {
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_status.sh" "/etc/zabbix"
-  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | sort | head -n1)"
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | sort | head -n1)"
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 
