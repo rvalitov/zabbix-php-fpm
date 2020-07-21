@@ -113,6 +113,11 @@ if [[ ! -x $S_FCGI ]]; then
   exit 1
 fi
 
+if [[ "${BASH_VERSINFO:-0}" -lt 4 ]]; then
+  ${S_ECHO} "This script requires bash version 4.x or newer. Older version detected."
+  exit 1
+fi
+
 #Local directory
 LOCAL_DIR=$(${S_DIRNAME} "$0")
 

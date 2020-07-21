@@ -4,6 +4,54 @@ language: bash
 jobs:
   include:
     - os: linux
+      dist: trusty
+      name: "Zabbix 4.0 @ Ubuntu 14 trusty, PHP default"
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.0/ubuntu trusty main'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - ca-certificates
+            - curl
+            - grep
+            - sed
+            - gawk
+            - lsof
+            - jq
+            - libfcgi0ldbl
+            - unzip
+            - zabbix-agent
+            - zabbix-get
+            - php5-fpm
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+    - os: linux
+      dist: xenial
+      name: "Zabbix 4.0 @ Ubuntu 16 xenial, PHP default"
+      arch: amd64
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://repo.zabbix.com/zabbix/4.0/ubuntu xenial main'
+              key_url: "https://repo.zabbix.com/zabbix-official-repo.key"
+          packages:
+            - ca-certificates
+            - curl
+            - grep
+            - sed
+            - gawk
+            - lsof
+            - jq
+            - libfcgi0ldbl
+            - unzip
+            - zabbix-agent
+            - zabbix-get
+            - php-fpm
+      before_script:
+        - sudo curl -o /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+    - os: linux
       dist: bionic
       name: "Missing packages test"
       arch: amd64

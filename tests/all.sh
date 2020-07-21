@@ -30,13 +30,53 @@ function AddSleepToConfig() {
   sleep 2
 }
 
+function getPHPVersion() {
+  TEST_STRING=$1
+  PHP_VERSION=$(echo "$TEST_STRING" | grep -oP "(\d\.\d)")
+  if [[ -z "$PHP_VERSION" ]]; then
+    PHP_VERSION=$(echo "$TEST_STRING" | grep -oP "php(\d)" | grep -oP "(\d)")
+  fi
+  echo "$PHP_VERSION"
+}
+
+function getEtcPHPDirectory() {
+  LIST_OF_DIRS=(
+    "/etc/php/"
+    "/etc/php5/"
+  )
+  for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
+    if [[ -d "$PHP_TEST_DIR" ]]; then
+      echo "$PHP_TEST_DIR"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+function getRunPHPDirectory() {
+  LIST_OF_DIRS=(
+    "/run/"
+    "/var/run/"
+  )
+  for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
+    RESULT_DIR=$(find "$PHP_TEST_DIR" -name 'php*-fpm.sock' -type s -exec dirname {} \; 2>/dev/null | sort | head -n1)
+    if [[ -d "$RESULT_DIR" ]]; then
+      echo "$RESULT_DIR"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 copyPool() {
   ORIGINAL_FILE=$1
   POOL_NAME=$2
   POOL_SOCKET=$3
   POOL_TYPE=$4
   POOL_DIR=$(dirname "${ORIGINAL_FILE}")
-  PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+  PHP_VERSION=$(getPHPVersion "$POOL_DIR")
 
   NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
   sudo cp "$ORIGINAL_FILE" "$NEW_POOL_FILE"
@@ -58,15 +98,19 @@ copyPool() {
 setupPool() {
   POOL_FILE=$1
   POOL_DIR=$(dirname "${POOL_FILE}")
-  PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+  PHP_VERSION=$(getPHPVersion "$POOL_DIR")
+
+  PHP_RUN_DIR=$(getRunPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
 
   #Delete all active pools except www.conf:
   sudo find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
 
   #Create new socket pools
   for ((c = 1; c <= MAX_POOLS; c++)); do
-    POOL_NAME="static$c"
-    POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+    POOL_NAME="socket$c"
+    POOL_SOCKET="${PHP_RUN_DIR}php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
     copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
     if [[ -z $TEST_SOCKET ]]; then
       TEST_SOCKET="$POOL_SOCKET"
@@ -116,13 +160,16 @@ setupPool() {
 }
 
 setupPools() {
-  PHP_LIST=$(sudo find /etc/php/ -name 'www.conf' -type f)
+  PHP_DIR=$(getEtcPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+  PHP_LIST=$(sudo find "$PHP_DIR" -name 'www.conf' -type f)
 
   #First we need to stop all PHP-FPM
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
       POOL_DIR=$(dirname "$pool")
-      PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+      PHP_VERSION=$(getPHPVersion "$POOL_DIR")
       sudo service "php${PHP_VERSION}-fpm" stop
     fi
   done <<<"$PHP_LIST"
@@ -136,35 +183,66 @@ setupPools() {
 }
 
 getNumberOfPHPVersions() {
-  PHP_COUNT=$(sudo find /etc/php/ -name 'www.conf' -type f | wc -l)
+  PHP_DIR=$(getEtcPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+
+  PHP_COUNT=$(find "$PHP_DIR" -name 'www.conf' -type f | wc -l)
   echo "$PHP_COUNT"
 }
 
 function startOndemandPoolsCache() {
+  PHP_DIR=$(getEtcPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+
+  PHP_RUN_DIR=$(getRunPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
+
   # We must start all the pools
   POOL_URL="/php-fpm-status"
 
-  PHP_LIST=$(sudo find /etc/php/ -name 'www.conf' -type f)
+  PHP_LIST=$(sudo find "$PHP_DIR" -name 'www.conf' -type f)
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
       POOL_DIR=$(dirname "$pool")
-      PHP_VERSION=$(echo "$POOL_DIR" | grep -oP "(\d\.\d)")
+      PHP_VERSION=$(getPHPVersion "$POOL_DIR")
 
       for ((c = 1; c <= MAX_POOLS; c++)); do
         POOL_NAME="ondemand$c"
-        POOL_SOCKET="/run/php/php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+        POOL_SOCKET="${PHP_RUN_DIR}php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
 
         PHP_STATUS=$(
           SCRIPT_NAME=$POOL_URL \
-          SCRIPT_FILENAME=$POOL_URL \
-          QUERY_STRING=json \
-          REQUEST_METHOD=GET \
-          sudo cgi-fcgi -bind -connect "$POOL_SOCKET" 2>/dev/null
+            SCRIPT_FILENAME=$POOL_URL \
+            QUERY_STRING=json \
+            REQUEST_METHOD=GET \
+            sudo cgi-fcgi -bind -connect "$POOL_SOCKET" 2>/dev/null
         )
         assertNotNull "Failed to connect to $POOL_SOCKET" "$PHP_STATUS"
       done
     fi
   done <<<"$PHP_LIST"
+}
+
+getAnySocket() {
+  PHP_DIR=$(getEtcPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+
+  PHP_RUN_DIR=$(getRunPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
+
+  #Get any socket of PHP-FPM:
+  PHP_FIRST=$(find "$PHP_DIR" -name 'www.conf' -type f | sort | head -n1)
+  assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
+  PHP_VERSION=$(getPHPVersion "$PHP_FIRST")
+  assertNotNull "Failed to get PHP version for $PHP_FIRST" "$PHP_VERSION"
+  PHP_POOL=$(find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s 2>/dev/null | sort | head -n1)
+  assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
+  echo "$PHP_POOL"
 }
 
 getAnyPort() {
@@ -183,7 +261,7 @@ oneTimeSetUp() {
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_status.sh" "/etc/zabbix"
-  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | head -n1)"
+  sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d | sort | head -n1)"
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_discovery.sh
   sudo chmod +x /etc/zabbix/zabbix_php_fpm_status.sh
 
