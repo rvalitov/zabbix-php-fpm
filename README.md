@@ -123,14 +123,25 @@ Please refer to [Wiki](https://github.com/rvalitov/zabbix-php-fpm/wiki/Installat
 Please refer to [Wiki](https://github.com/rvalitov/zabbix-php-fpm/wiki/Testing-and-Troubleshooting).
 
 # Compatibility
-Should work with any version of PHP-FPM (starting with PHP 5.3.3), Zabbix 4.0.x and later.
-Can work with any version of ISPConfig as long as you have a valid PHP-FPM status page configuration there.
 
-Tested with:
-- [Travis CI](https://travis-ci.com/rvalitov/zabbix-php-fpm)
-- PHP 7.4, 7.3, 7.2, 7.1, 7.0
-- Zabbix 5.0.1, 4.4.4, 4.2.5, 4.0.20, 4.0.16, 4.0.4 
-- Debian 10, 9
-- Ubuntu 18
-- CentOS 7
-- ISPConfig v.3.1.14p2
+### System requirements
+
+- **PHP**. Should work with any version of PHP-FPM (starting with PHP 5.3.3)
+- **Zabbix** 4.0.x and later.
+- **ISPConfig**. Can work with any version of ISPConfig as long as you have a valid PHP-FPM status page configuration there.
+- Minimal `bash` version 4.
+- **OS**
+    - **Debian** 8 Jessie or newer
+    - **Ubuntu** 20 Focal, 18 Bionic, 16 Xenial, 14 Trusty. Other versions are supported if they are present in the [Zabbix repository](http://repo.zabbix.com/zabbix/4.0/ubuntu/dists/).
+    - **CentOS** 6 or newer
+    - **RHEL** 5 or newer
+
+### Tested with:
+
+- [**Travis CI**](https://travis-ci.com/rvalitov/zabbix-php-fpm)
+- **PHP** 7.4, 7.3, 7.2, 7.1, 7.0
+- **Zabbix** 5.0.1, 4.4.4, 4.2.5, 4.0.20, 4.0.16, 4.0.4 
+- **Debian** 10, 9
+- **Ubuntu** 18 Bionic, 16 Xenial, 14 Trusty
+- **CentOS** 7
+- **ISPConfig** v.3.1.14p2
