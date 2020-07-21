@@ -3,14 +3,44 @@
 #https://github.com/rvalitov/zabbix-php-fpm
 #This script is used for testing
 
+################################### START OF CONFIGURATION CONSTANTS
+
+# Number of pools, created for each ondemand, static and dynamic sockets.
 MAX_POOLS=3
+
+# Number of port based pools created for each PHP version
 MAX_PORTS=3
+
+# Starting port number for port based PHP pools
 MIN_PORT=49001
+
+# Maximum number of ports per PHP version, this value is used to define the available port range.
 MAX_PORTS_COUNT=100
-TEST_SOCKET=""
+
+# Timeout in seconds that we put in the option "pm.process_idle_timeout" of configuration of ondemand PHP pools.
 ONDEMAND_TIMEOUT=60
+
+# Timeout in seconds that we put in the configuration of Zabbix agent
 ZABBIX_TIMEOUT=20
+
+# Maximum iterations to perform during sequential scans of pools, when the operation is time-consuming and requires
+# multiple calls to the discovery script.
+# This value should be big enough to be able to get information about all pools in the system.
+# It allows to exit from indefinite check loops.
+MAX_CHECKS=150
+
+################################### END OF CONFIGURATION CONSTANTS
+
+# A random socket used for tests, this variable is defined when PHP pools are created
+TEST_SOCKET=""
+
+# The directory where the PHP socket files are located, for example, /var/run or /run.
+# This variable is used as cache, because it may be impossible to detect it when we start and stop the PHP-FPM.
+# Don't use this variable directly. Use function getRunPHPDirectory
 PHP_SOCKET_DIR=""
+
+# The directory where the PHP configuration files are located, for example, /etc/php or /etc/php5.
+# This variable is used as cache. So, don't use this variable directly. Use function getEtcPHPDirectory
 PHP_ETC_DIR=""
 
 function getUserParameters() {
@@ -39,6 +69,10 @@ function getPHPVersion() {
     PHP_VERSION=$(echo "$TEST_STRING" | grep -oP "php(\d)" | grep -oP "(\d)")
   fi
   echo "$PHP_VERSION"
+  if [[ -z "$PHP_VERSION" ]]; then
+    return 1
+  fi
+  return 0
 }
 
 function getEtcPHPDirectory() {
@@ -91,6 +125,7 @@ copyPool() {
   POOL_TYPE=$4
   POOL_DIR=$(dirname "${ORIGINAL_FILE}")
   PHP_VERSION=$(getPHPVersion "$POOL_DIR")
+  assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
 
   NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
   sudo cp "$ORIGINAL_FILE" "$NEW_POOL_FILE"
@@ -113,12 +148,17 @@ setupPool() {
   POOL_FILE=$1
   POOL_DIR=$(dirname "${POOL_FILE}")
   PHP_VERSION=$(getPHPVersion "$POOL_DIR")
+  assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
 
   PHP_RUN_DIR=$(getRunPHPDirectory)
   EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
+  assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
   PHP_DIR=$(getEtcPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
+  assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
   #Delete all active pools except www.conf:
   sudo find "$POOL_DIR" -name '*.conf' -type f -not -name 'www.conf' -exec rm -rf {} \;
@@ -178,17 +218,23 @@ setupPool() {
 setupPools() {
   PHP_DIR=$(getEtcPHPDirectory)
   EXIT_CODE=$?
-  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+  assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
+  assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
+
   PHP_LIST=$(sudo find "$PHP_DIR" -name 'www.conf' -type f)
 
   #Call to detect and cache PHP run directory, we need to call it before we stop all PHP-FPM
-  getRunPHPDirectory
+  PHP_RUN_DIR=$(getRunPHPDirectory)
+  EXIT_CODE=$?
+  assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
+  assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
   #First we need to stop all PHP-FPM
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
       POOL_DIR=$(dirname "$pool")
       PHP_VERSION=$(getPHPVersion "$POOL_DIR")
+      assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
       sudo service "php${PHP_VERSION}-fpm" stop
     fi
   done <<<"$PHP_LIST"
@@ -204,7 +250,8 @@ setupPools() {
 getNumberOfPHPVersions() {
   PHP_DIR=$(getEtcPHPDirectory)
   EXIT_CODE=$?
-  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+  assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
+  assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
   PHP_COUNT=$(find "$PHP_DIR" -name 'www.conf' -type f | wc -l)
   echo "$PHP_COUNT"
@@ -213,11 +260,13 @@ getNumberOfPHPVersions() {
 function startOndemandPoolsCache() {
   PHP_DIR=$(getEtcPHPDirectory)
   EXIT_CODE=$?
-  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+  assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
+  assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
   PHP_RUN_DIR=$(getRunPHPDirectory)
   EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
+  assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
   # We must start all the pools
   POOL_URL="/php-fpm-status"
@@ -227,6 +276,7 @@ function startOndemandPoolsCache() {
     if [[ -n $pool ]]; then
       POOL_DIR=$(dirname "$pool")
       PHP_VERSION=$(getPHPVersion "$POOL_DIR")
+      assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
 
       for ((c = 1; c <= MAX_POOLS; c++)); do
         POOL_NAME="ondemand$c"
@@ -248,17 +298,19 @@ function startOndemandPoolsCache() {
 getAnySocket() {
   PHP_DIR=$(getEtcPHPDirectory)
   EXIT_CODE=$?
-  assertEquals "Failed to find PHP directory" "0" "$EXIT_CODE"
+  assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
+  assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
   PHP_RUN_DIR=$(getRunPHPDirectory)
   EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
+  assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
   #Get any socket of PHP-FPM:
   PHP_FIRST=$(find "$PHP_DIR" -name 'www.conf' -type f | sort | head -n1)
   assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
   PHP_VERSION=$(getPHPVersion "$PHP_FIRST")
-  assertNotNull "Failed to get PHP version for $PHP_FIRST" "$PHP_VERSION"
+  assertNotNull "Failed to detect PHP version from string '$PHP_FIRST'" "$PHP_VERSION"
   PHP_POOL=$(find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s 2>/dev/null | sort | head -n1)
   assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
   echo "$PHP_POOL"
@@ -471,7 +523,6 @@ testZabbixDiscoverDoubleRun() {
 function discoverAllZabbix() {
   DATA_OLD=$1
   DATA_COUNT=$2
-  MAX_CHECKS=150
 
   if [[ -z $DATA_COUNT ]]; then
     DATA_COUNT=0
