@@ -71,6 +71,11 @@ if [[ ! -f ${S_WHOAMI} ]]; then
   exit 1
 fi
 
+if [[ "${BASH_VERSINFO:-0}" -lt 4 ]]; then
+  ${S_ECHO} "This script requires bash version 4.x or newer. Older version detected."
+  exit 1
+fi
+
 STATUS_PATH="/php-fpm-status"
 DEBUG_MODE=""
 ACTIVE_USER=$(${S_WHOAMI})
