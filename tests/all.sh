@@ -172,6 +172,25 @@ copyPool() {
   fi
 }
 
+getPHPServiceName() {
+  PHP_VERSION=$1
+  LIST_OF_SERVICES=$(sudo service --status-all)
+
+  LIST_OF_NAMES=(
+    "php${PHP_VERSION}-fpm"
+    "php-fpm"
+  )
+
+  for SERVICE_NAME in "${LIST_OF_NAMES[@]}"; do
+    RESULT=$(echo "$LIST_OF_SERVICES" | grep -F "$SERVICE_NAME")
+    if [[ -n "$RESULT" ]]; then
+      echo "$SERVICE_NAME"
+      return 0
+    fi
+  done
+  return 1
+}
+
 setupPool() {
   POOL_FILE=$1
   POOL_DIR=$(dirname "${POOL_FILE}")
@@ -235,11 +254,18 @@ setupPool() {
 
   echo "List of configured PHP$PHP_VERSION pools:"
   sudo ls -l "$POOL_DIR"
-  sudo service "php${PHP_VERSION}-fpm" restart
+  SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
+  assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
+  sudo service "$SERVICE_NAME" restart
   sleep 3
 
   echo "List of running PHP$PHP_VERSION pools:"
-  sudo systemctl -l status "php${PHP_VERSION}-fpm.service"
+  E_SYSTEM_CONTROL=$(type -P systemctl)
+  if [[ -x "$E_SYSTEM_CONTROL" ]]; then
+    sudo systemctl -l status "$SERVICE_NAME.service"
+  else
+    sudo initctl list | grep -F "$SERVICE_NAME"
+  fi
   sleep 2
 }
 
@@ -263,7 +289,9 @@ setupPools() {
       POOL_DIR=$(dirname "$pool")
       PHP_VERSION=$(getPHPVersion "$POOL_DIR")
       assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
-      sudo service "php${PHP_VERSION}-fpm" stop
+      SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
+      assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
+      sudo service "$SERVICE_NAME" stop
     fi
   done <<<"$PHP_LIST"
 
@@ -571,123 +599,70 @@ function discoverAllZabbix() {
   fi
 }
 
-testZabbixDiscoverNumberOfStaticPools() {
+checkNumberOfPools() {
+  POOL_TYPE=$1
+  CHECK_COUNT=$2
+
   DATA=$(discoverAllZabbix)
   STATUS=$?
   if [[ $STATUS -ne 0 ]]; then
     echo "$DATA"
+    return 1
   fi
-  assertEquals "Failed to discover all data" "0" "$STATUS"
+  assertEquals "Failed to discover all data when checking pools '$POOL_TYPE'" "0" "$STATUS"
 
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"static' | wc -l)
+  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F "{\"{#POOLNAME}\":\"$POOL_TYPE" | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
-  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+  if [[ -n "$CHECK_COUNT" ]] && [[ "$CHECK_COUNT" -ge 0 ]]; then
+    POOLS_BY_DESIGN="$CHECK_COUNT"
+  else
+    POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
+  fi
+  assertEquals "Number of '$POOL_TYPE' pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+  echo "$DATA"
+  return 0
+}
+
+testZabbixDiscoverNumberOfStaticPools() {
+  checkNumberOfPools "static"
 }
 
 testZabbixDiscoverNumberOfDynamicPools() {
-  DATA=$(discoverAllZabbix)
-  STATUS=$?
-  if [[ $STATUS -ne 0 ]]; then
-    echo "$DATA"
-  fi
-  assertEquals "Failed to discover all data" "0" "$STATUS"
-
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"dynamic' | wc -l)
-  PHP_COUNT=$(getNumberOfPHPVersions)
-  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
-  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+  checkNumberOfPools "dynamic"
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsCold() {
-  DATA=$(discoverAllZabbix)
-  STATUS=$?
-  if [[ $STATUS -ne 0 ]]; then
-    echo "$DATA"
-  fi
-  assertEquals "Failed to discover all data" "0" "$STATUS"
-
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
   #If the pools are not started then we have 0 here:
-  assertEquals "Number of pools mismatch" "0" "$NUMBER_OF_POOLS"
+  checkNumberOfPools "ondemand" 0
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsHot() {
-  PHP_COUNT=$(getNumberOfPHPVersions)
   startOndemandPoolsCache
-
-  DATA=$(discoverAllZabbix)
-  STATUS=$?
-  if [[ $STATUS -ne 0 ]]; then
-    echo "$DATA"
-  fi
-  assertEquals "Failed to discover all data" "0" "$STATUS"
-
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
-  PHP_COUNT=$(getNumberOfPHPVersions)
-  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
-  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+  checkNumberOfPools "ondemand"
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsCache() {
-  PHP_COUNT=$(getNumberOfPHPVersions)
   startOndemandPoolsCache
 
-  DATA=$(discoverAllZabbix)
-  STATUS=$?
-  if [[ $STATUS -ne 0 ]]; then
-    echo "$DATA"
-  fi
-  assertEquals "Failed to discover all data (initial check)" "0" "$STATUS"
-
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
-  PHP_COUNT=$(getNumberOfPHPVersions)
-  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
-  assertEquals "Number of pools mismatch (initial check)" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+  echo "Empty cache test..."
+  INITIAL_DATA=$(checkNumberOfPools "ondemand")
 
   WAIT_TIMEOUT=$(echo "$ONDEMAND_TIMEOUT * 2" | bc)
   sleep "$WAIT_TIMEOUT"
 
-  DATA_CACHE=$(discoverAllZabbix)
-  STATUS=$?
-  if [[ $STATUS -ne 0 ]]; then
-    echo "$DATA"
-  fi
-  assertEquals "Failed to discover all data (final check)" "0" "$STATUS"
+  echo "Full cache test..."
+  CACHED_DATA=$(checkNumberOfPools "ondemand")
 
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"ondemand' | wc -l)
-  PHP_COUNT=$(getNumberOfPHPVersions)
-  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
-  assertEquals "Number of pools mismatch (final check)" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
-  assertEquals "Data mismatch" "$DATA" "$DATA_CACHE"
+  assertEquals "Data mismatch" "$INITIAL_DATA" "$CACHED_DATA"
 }
 
 testZabbixDiscoverNumberOfIPPools() {
-  DATA=$(discoverAllZabbix)
-  STATUS=$?
-  if [[ $STATUS -ne 0 ]]; then
-    echo "$DATA"
-  fi
-  assertEquals "Failed to discover all data" "0" "$STATUS"
-
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"localhost",' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
-  POOLS_BY_DESIGN="$PHP_COUNT"
-  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+  checkNumberOfPools "localhost" "$PHP_COUNT"
 }
 
 testZabbixDiscoverNumberOfPortPools() {
-  DATA=$(discoverAllZabbix)
-  STATUS=$?
-  if [[ $STATUS -ne 0 ]]; then
-    echo "$DATA"
-  fi
-  assertEquals "Failed to discover all data" "0" "$STATUS"
-
-  NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F '{"{#POOLNAME}":"port' | wc -l)
-  PHP_COUNT=$(getNumberOfPHPVersions)
-  POOLS_BY_DESIGN=$(echo "$PHP_COUNT * $MAX_POOLS" | bc)
-  assertEquals "Number of pools mismatch" "$POOLS_BY_DESIGN" "$NUMBER_OF_POOLS"
+  checkNumberOfPools "port"
 }
 
 #This test should be last in Zabbix tests
