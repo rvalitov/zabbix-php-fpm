@@ -623,8 +623,8 @@ checkNumberOfPools() {
   return 0
 }
 
-testZabbixDiscoverNumberOfStaticPools() {
-  checkNumberOfPools "static"
+testZabbixDiscoverNumberOfSocketPools() {
+  checkNumberOfPools "socket"
 }
 
 testZabbixDiscoverNumberOfDynamicPools() {
