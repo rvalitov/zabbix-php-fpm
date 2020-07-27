@@ -118,6 +118,26 @@ function getRunPHPDirectory() {
     fi
   done
 
+  if [[ -z "$PHP_SOCKET_DIR" ]]; then
+    #Try to parse the location from default config
+    PHP_DIR=$(getEtcPHPDirectory)
+    EXIT_CODE=$?
+    assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
+    assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
+
+    DEFAULT_CONF=$(sudo find "$PHP_DIR" -name "www.conf" -type f | uniq | head -n1)
+    assertTrue "Failed to find default www.conf file inside '$PHP_DIR'" "[ -n $DEFAULT_CONF ]"
+
+    DEFAULT_SOCKET=$(sudo grep -Po 'listen = (.+)' "$DEFAULT_CONF" | cut -d '=' -f2 | sed -e 's/^[ \t]*//')
+    assertTrue "Failed to extract socket information from '$DEFAULT_CONF'" "[ -n $DEFAULT_SOCKET ]"
+
+    RESULT_DIR=$(dirname "$DEFAULT_SOCKET")
+    assertTrue "Directory '$RESULT_DIR' does not exist" "[ -d $RESULT_DIR ]"
+    if [[ -d "$RESULT_DIR" ]]; then
+      PHP_SOCKET_DIR="$RESULT_DIR/"
+    fi
+  fi
+
   if [[ -n "$PHP_SOCKET_DIR" ]]; then
     echo "$PHP_SOCKET_DIR"
     return 0
