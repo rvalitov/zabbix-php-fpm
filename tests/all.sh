@@ -174,7 +174,7 @@ copyPool() {
 
 getPHPServiceName() {
   PHP_VERSION=$1
-  LIST_OF_SERVICES=$(sudo service --status-all)
+  LIST_OF_SERVICES=$(sudo service --status-all | uniq)
 
   LIST_OF_NAMES=(
     "php${PHP_VERSION}-fpm"
@@ -256,6 +256,7 @@ setupPool() {
   sudo ls -l "$POOL_DIR"
   SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
   assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
+  echo "Restarting service $SERVICE_NAME..."
   sudo service "$SERVICE_NAME" restart
   sleep 3
 
@@ -291,6 +292,7 @@ setupPools() {
       assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
       SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
       assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
+      echo "Stopping service $SERVICE_NAME..."
       sudo service "$SERVICE_NAME" stop
     fi
   done <<<"$PHP_LIST"

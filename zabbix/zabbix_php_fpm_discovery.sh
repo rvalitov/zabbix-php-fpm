@@ -194,7 +194,7 @@ function UpdatePoolInCache() {
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
       #Deleting the pool first
-      mapfile -d $'\0' -t CACHE < <($S_PRINTF '%s\0' "${CACHE[@]}" | $S_GREP -Fwzv "$ITEM_NAME $ITEM_SOCKET")
+      mapfile -t CACHE < <($S_PRINTF '%s\n' "${CACHE[@]}" | $S_GREP -Fwzv "$ITEM_NAME $ITEM_SOCKET")
     fi
   done
 
@@ -217,7 +217,7 @@ function UpdateCacheList() {
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
       #Deleting the pool first
-      mapfile -d $'\0' -t CACHE < <($S_PRINTF '%s\0' "${CACHE[@]}" | $S_GREP -Fwzv "ITEM_NAME $ITEM_SOCKET")
+      mapfile -t CACHE < <($S_PRINTF '%s\n' "${CACHE[@]}" | $S_GREP -Fwzv "ITEM_NAME $ITEM_SOCKET")
     fi
   done
 }
@@ -290,7 +290,7 @@ function DeletePoolFromPendingList() {
   fi
 
   #Otherwise we remove this pool from the list
-  mapfile -d $'\0' -t PENDING_LIST < <($S_PRINTF '%s\0' "${PENDING_LIST[@]}" | $S_GREP -Fxzv "$POOL_NAME $POOL_SOCKET")
+  mapfile -t PENDING_LIST < <($S_PRINTF '%s\n' "${PENDING_LIST[@]}" | $S_GREP -Fxzv "$POOL_NAME $POOL_SOCKET")
   PrintDebug "Removed pool $POOL_NAME $POOL_SOCKET from pending list"
   return 1
 }
