@@ -43,6 +43,10 @@ PHP_SOCKET_DIR=""
 # This variable is used as cache. So, don't use this variable directly. Use function getEtcPHPDirectory
 PHP_ETC_DIR=""
 
+# List of all services in the system.
+# This variable is used as cache. So, don't use this variable directly. Use function getPHPServiceName
+LIST_OF_SERVICES=""
+
 function getUserParameters() {
   sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f 2>/dev/null | sort | head -n1
 }
@@ -174,7 +178,9 @@ copyPool() {
 
 getPHPServiceName() {
   PHP_VERSION=$1
-  LIST_OF_SERVICES=$(sudo service --status-all | uniq)
+  if [[ -z "$LIST_OF_SERVICES" ]]; then
+    LIST_OF_SERVICES=$(sudo service --status-all | sort)
+  fi
 
   LIST_OF_NAMES=(
     "php${PHP_VERSION}-fpm"
@@ -575,7 +581,7 @@ testZabbixDiscoverDoubleRun() {
   DATA_FIRST=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
 
-  assertNotEquals "Multiple discovery routines provide the same results" "$DATA_FIRST" "$DATA_SECOND"
+  assertNotEquals "Multiple discovery routines provide the same results: $DATA_FIRST" "$DATA_FIRST" "$DATA_SECOND"
 }
 
 function discoverAllZabbix() {
@@ -587,7 +593,7 @@ function discoverAllZabbix() {
   fi
 
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  if [[ "$DATA_OLD" == "$DATA" ]]; then
+  if [[ -n "$DATA" ]] && [[ -n "$DATA_OLD" ]] && [[ "$DATA_OLD" == "$DATA" ]]; then
     echo "$DATA"
     return 0
   else
@@ -598,6 +604,8 @@ function discoverAllZabbix() {
       return 1
     fi
     discoverAllZabbix "$DATA" "$DATA_COUNT"
+    STATUS=$?
+    return $STATUS
   fi
 }
 
