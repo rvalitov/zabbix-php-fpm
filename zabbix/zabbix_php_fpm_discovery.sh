@@ -313,7 +313,7 @@ function DeletePoolFromPendingList() {
   for ITEM_INDEX in "${!PENDING_LIST[@]}"; do
     local PENDING_ITEM="${PENDING_LIST[$ITEM_INDEX]}"
     if [[ "$PENDING_ITEM" == "$POOL_NAME $POOL_SOCKET" ]]; then
-      unset "PENDING_ITEM[$ITEM_INDEX]"
+      unset "PENDING_LIST[$ITEM_INDEX]"
       UNSET_USED="1"
     fi
   done

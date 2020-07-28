@@ -47,6 +47,17 @@ PHP_ETC_DIR=""
 # This variable is used as cache. So, don't use this variable directly. Use function getPHPServiceName
 LIST_OF_SERVICES=""
 
+function travis_fold_start() {
+  local name=$1
+  local info=$2
+  echo -e "travis_fold:start:${name}\033[33;1m${info}\033[0m"
+}
+
+function travis_fold_end() {
+  local name=$1
+  echo -e "\ntravis_fold:end:${name}\r"
+}
+
 function getUserParameters() {
   sudo find /etc/zabbix/ -name 'userparameter_php_fpm.conf' -type f 2>/dev/null | sort | head -n1
 }
@@ -258,21 +269,24 @@ setupPool() {
   assertNull "Port $POOL_PORT is busy" "$PORT_IS_BUSY"
   copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
 
-  echo "List of configured PHP$PHP_VERSION pools:"
+  travis_fold_start "list_PHP$PHP_VERSION" "List of configured PHP$PHP_VERSION pools"
   sudo ls -l "$POOL_DIR"
+  travis_fold_end "list_PHP$PHP_VERSION"
+
   SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
   assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
   echo "Restarting service $SERVICE_NAME..."
   sudo service "$SERVICE_NAME" restart
   sleep 3
 
-  echo "List of running PHP$PHP_VERSION pools:"
+  travis_fold_start "running_PHP$PHP_VERSION" "List of running PHP$PHP_VERSION pools"
   E_SYSTEM_CONTROL=$(type -P systemctl)
   if [[ -x "$E_SYSTEM_CONTROL" ]]; then
     sudo systemctl -l status "$SERVICE_NAME.service"
   else
     sudo initctl list | grep -F "$SERVICE_NAME"
   fi
+  travis_fold_end "running_PHP$PHP_VERSION"
   sleep 2
 }
 
@@ -388,10 +402,12 @@ getAnyPort() {
 
 oneTimeSetUp() {
   echo "Started job $TRAVIS_JOB_NAME"
-  echo "Host info:"
+  travis_fold_start "host_info" "Host information"
   nslookup localhost
   sudo ifconfig
   sudo cat /etc/hosts
+  travis_fold_end "host_info"
+
   echo "Copying Zabbix files..."
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
@@ -403,8 +419,11 @@ oneTimeSetUp() {
   #Configure Zabbix:
   echo 'zabbix ALL=NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh,/etc/zabbix/zabbix_php_fpm_status.sh' | sudo EDITOR='tee -a' visudo
   sudo sed -i "s#.* Timeout=.*#Timeout = $ZABBIX_TIMEOUT#" "/etc/zabbix/zabbix_agentd.conf"
-  echo "Zabbix agent configuration:"
+
+  travis_fold_start "zabbix_agent" "Zabbix agent configuration"
   sudo cat "/etc/zabbix/zabbix_agentd.conf"
+  travis_fold_end "zabbix_agent"
+
   sudo service zabbix-agent restart
 
   echo "Setup PHP-FPM..."
@@ -709,3 +728,5 @@ testZabbixDiscoverManyPoolsRunDuration() {
 
 # Load shUnit2.
 . shunit2
+
+}
