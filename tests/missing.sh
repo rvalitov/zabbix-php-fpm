@@ -3,6 +3,9 @@
 #https://github.com/rvalitov/zabbix-php-fpm
 #This script is used for testing
 
+# Used for section folding in Travis CI
+SECTION_UNIQUE_ID=""
+
 # ----------------------------------
 # Colors
 # ----------------------------------
@@ -35,7 +38,7 @@ function printRed() {
 
 function printGreen() {
   local info=$1
-  echo -e "${GREEN}$info${NOCOLOR}"
+  echo -e "${LIGHTGREEN}$info${NOCOLOR}"
 }
 
 function printSuccess() {
@@ -56,22 +59,22 @@ function printAction() {
 function travis_fold_start() {
   local name=$1
   local info=$2
-  echo -e "travis_fold:start:${name}\033[33;1m${info}\033[0m"
+  SECTION_UNIQUE_ID="$name $(date +%s%3N)"
+  echo -e "travis_fold:start:${SECTION_UNIQUE_ID}\033[33;1m${info}\033[0m"
 }
 
 function travis_fold_end() {
-  local name=$1
-  echo -e "\ntravis_fold:end:${name}\r"
+  echo -e "\ntravis_fold:end:${SECTION_UNIQUE_ID}\r"
 }
 
 oneTimeSetUp() {
   printAction "Started job $TRAVIS_JOB_NAME"
 
-  travis_fold_start "host_info" "Host information"
+  travis_fold_start "host_info" "ⓘ Host information"
   nslookup localhost
   sudo ifconfig
   sudo cat /etc/hosts
-  travis_fold_end "host_info"
+  travis_fold_end
 
   printAction "Copying Zabbix files..."
   #Install files:

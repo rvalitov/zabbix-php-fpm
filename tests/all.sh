@@ -47,6 +47,9 @@ PHP_ETC_DIR=""
 # This variable is used as cache. So, don't use this variable directly. Use function getPHPServiceName
 LIST_OF_SERVICES=""
 
+# Used for section folding in Travis CI
+SECTION_UNIQUE_ID=""
+
 # ----------------------------------
 # Colors
 # ----------------------------------
@@ -79,7 +82,7 @@ function printRed() {
 
 function printGreen() {
   local info=$1
-  echo -e "${GREEN}$info${NOCOLOR}"
+  echo -e "${LIGHTGREEN}$info${NOCOLOR}"
 }
 
 function printSuccess() {
@@ -100,12 +103,12 @@ function printAction() {
 function travis_fold_start() {
   local name=$1
   local info=$2
-  echo -e "travis_fold:start:${name}\033[33;1m${info}\033[0m"
+  SECTION_UNIQUE_ID="$name $(date +%s%3N)"
+  echo -e "travis_fold:start:${SECTION_UNIQUE_ID}\033[33;1m${info}\033[0m"
 }
 
 function travis_fold_end() {
-  local name=$1
-  echo -e "\ntravis_fold:end:${name}\r"
+  echo -e "\ntravis_fold:end:${SECTION_UNIQUE_ID}\r"
 }
 
 function getUserParameters() {
@@ -121,11 +124,9 @@ function restoreUserParameters() {
 function AddSleepToConfig() {
   PARAMS_FILE=$(getUserParameters)
   sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
-  local SECTION_ID
-  SECTION_ID="AddSleepToConfig $(date +%s%3N)"
-  travis_fold_start "$SECTION_ID" "New UserParameter file"
+  travis_fold_start "AddSleepToConfig" "ⓘ New UserParameter file"
   sudo cat "$PARAMS_FILE"
-  travis_fold_end "$SECTION_ID"
+  travis_fold_end
   restartService "zabbix-agent"
   sleep 2
 }
@@ -243,7 +244,7 @@ copyPool() {
 getPHPServiceName() {
   PHP_VERSION=$1
   if [[ -z "$LIST_OF_SERVICES" ]]; then
-    LIST_OF_SERVICES=$(sudo service --status-all | sort)
+    LIST_OF_SERVICES=$(sudo service --status-all 2>/dev/null | sort)
   fi
 
   LIST_OF_NAMES=(
@@ -322,9 +323,9 @@ setupPool() {
   assertNull "Port $POOL_PORT is busy" "$PORT_IS_BUSY"
   copyPool "$POOL_FILE" "$POOL_NAME" "$POOL_SOCKET" "static"
 
-  travis_fold_start "list_PHP$PHP_VERSION" "List of configured PHP$PHP_VERSION pools"
+  travis_fold_start "list_PHP$PHP_VERSION" "ⓘ List of configured PHP$PHP_VERSION pools"
   sudo ls -l "$POOL_DIR"
-  travis_fold_end "list_PHP$PHP_VERSION"
+  travis_fold_end
 
   SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
   assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
@@ -332,14 +333,14 @@ setupPool() {
   restartService "$SERVICE_NAME"
   sleep 3
 
-  travis_fold_start "running_PHP$PHP_VERSION" "List of running PHP$PHP_VERSION pools"
+  travis_fold_start "running_PHP$PHP_VERSION" "ⓘ List of running PHP$PHP_VERSION pools"
   E_SYSTEM_CONTROL=$(type -P systemctl)
   if [[ -x "$E_SYSTEM_CONTROL" ]]; then
     sudo systemctl -l status "$SERVICE_NAME.service"
   else
     sudo initctl list | grep -F "$SERVICE_NAME"
   fi
-  travis_fold_end "running_PHP$PHP_VERSION"
+  travis_fold_end
   sleep 2
 }
 
@@ -478,11 +479,11 @@ function stopService() {
 oneTimeSetUp() {
   printAction "Started job $TRAVIS_JOB_NAME"
 
-  travis_fold_start "host_info" "Host information"
+  travis_fold_start "host_info" "ⓘ Host information"
   nslookup localhost
   sudo ifconfig
   sudo cat /etc/hosts
-  travis_fold_end "host_info"
+  travis_fold_end
 
   printAction "Copying Zabbix files..."
   #Install files:
@@ -496,9 +497,9 @@ oneTimeSetUp() {
   echo 'zabbix ALL=NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh,/etc/zabbix/zabbix_php_fpm_status.sh' | sudo EDITOR='tee -a' visudo
   sudo sed -i "s#.* Timeout=.*#Timeout = $ZABBIX_TIMEOUT#" "/etc/zabbix/zabbix_agentd.conf"
 
-  travis_fold_start "zabbix_agent" "Zabbix agent configuration"
+  travis_fold_start "zabbix_agent" "ⓘ Zabbix agent configuration"
   sudo cat "/etc/zabbix/zabbix_agentd.conf"
-  travis_fold_end "zabbix_agent"
+  travis_fold_end
 
   restartService "zabbix-agent"
 
@@ -608,9 +609,9 @@ testDiscoverScriptDebug() {
     ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
     printYellow "Errors list:"
     printYellow "$ERRORS_LIST"
-    travis_fold_start "testDiscoverScriptDebug_full" "Full output"
+    travis_fold_start "testDiscoverScriptDebug_full" "ⓘ Full output"
     echo "$DATA"
-    travis_fold_end "testDiscoverScriptDebug_full"
+    travis_fold_end
   fi
   assertEquals "Discover script errors mismatch" "$PHP_COUNT" "$NUMBER_OF_ERRORS"
   printSuccess "${FUNCNAME[0]}"
@@ -632,13 +633,11 @@ testDiscoverScriptSleep() {
   printYellow "Stop time checks: $STOP_OK_COUNT"
 
   if [[ $CHECK_OK_COUNT -lt 1 ]] || [[ $STOP_OK_COUNT -lt 1 ]]; then
-    local SECTION_ID
-    SECTION_ID="testDiscoverScriptSleep $(date +%s%3N)"
-    travis_fold_start "$SECTION_ID" "Zabbix response data"
+    travis_fold_start "ScriptSleep" "ⓘ Zabbix response"
     echo "$DATA"
-    travis_fold_end "$SECTION_ID"
+    travis_fold_end
   fi
-  assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 || $STOP_OK_COUNT -eq 1 ]"
+  assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 ] || [ $STOP_OK_COUNT -eq 1 ]"
   assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -755,24 +754,40 @@ checkNumberOfPools() {
 }
 
 testZabbixDiscoverNumberOfSocketPools() {
-  checkNumberOfPools "socket"
+  local DATA
+  DATA=$(checkNumberOfPools "socket")
+  travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
+  echo "$DATA"
+  travis_fold_end
   printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfDynamicPools() {
-  checkNumberOfPools "dynamic"
+  local DATA
+  DATA=$(checkNumberOfPools "dynamic")
+  travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
+  echo "$DATA"
+  travis_fold_end
   printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsCold() {
+  local DATA
   #If the pools are not started then we have 0 here:
-  checkNumberOfPools "ondemand" 0
+  DATA=$(checkNumberOfPools "ondemand" 0)
+  travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
+  echo "$DATA"
+  travis_fold_end
   printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsHot() {
   startOndemandPoolsCache
-  checkNumberOfPools "ondemand"
+  local DATA
+  DATA=$(checkNumberOfPools "ondemand")
+  travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
+  echo "$DATA"
+  travis_fold_end
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -781,12 +796,18 @@ testZabbixDiscoverNumberOfOndemandPoolsCache() {
 
   printAction "Empty cache test..."
   INITIAL_DATA=$(checkNumberOfPools "ondemand")
+  travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
+  echo "$INITIAL_DATA"
+  travis_fold_end
 
   WAIT_TIMEOUT=$(echo "$ONDEMAND_TIMEOUT * 2" | bc)
   sleep "$WAIT_TIMEOUT"
 
   printAction "Full cache test..."
   CACHED_DATA=$(checkNumberOfPools "ondemand")
+  travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
+  echo "$CACHED_DATA"
+  travis_fold_end
 
   assertEquals "Data mismatch" "$INITIAL_DATA" "$CACHED_DATA"
   printSuccess "${FUNCNAME[0]}"
@@ -794,12 +815,20 @@ testZabbixDiscoverNumberOfOndemandPoolsCache() {
 
 testZabbixDiscoverNumberOfIPPools() {
   PHP_COUNT=$(getNumberOfPHPVersions)
-  checkNumberOfPools "localhost" "$PHP_COUNT"
+  local DATA
+  DATA=$(checkNumberOfPools "localhost" "$PHP_COUNT")
+  travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
+  echo "$DATA"
+  travis_fold_end
   printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfPortPools() {
-  checkNumberOfPools "port"
+  local DATA
+  DATA=$(checkNumberOfPools "port")
+  travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
+  echo "$DATA"
+  travis_fold_end
   printSuccess "${FUNCNAME[0]}"
 }
 
