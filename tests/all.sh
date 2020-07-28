@@ -403,6 +403,8 @@ oneTimeSetUp() {
   #Configure Zabbix:
   echo 'zabbix ALL=NOPASSWD: /etc/zabbix/zabbix_php_fpm_discovery.sh,/etc/zabbix/zabbix_php_fpm_status.sh' | sudo EDITOR='tee -a' visudo
   sudo sed -i "s#.* Timeout=.*#Timeout = $ZABBIX_TIMEOUT#" "/etc/zabbix/zabbix_agentd.conf"
+  echo "Zabbix agent configuration:"
+  sudo cat "/etc/zabbix/zabbix_agentd.conf"
   sudo service zabbix-agent restart
 
   echo "Setup PHP-FPM..."
