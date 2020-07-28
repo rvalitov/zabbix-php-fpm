@@ -126,7 +126,7 @@ function AddSleepToConfig() {
   travis_fold_start "$SECTION_ID" "New UserParameter file"
   sudo cat "$PARAMS_FILE"
   travis_fold_end "$SECTION_ID"
-  sudo service zabbix-agent restart
+  restartService "zabbix-agent"
   sleep 2
 }
 
@@ -329,7 +329,7 @@ setupPool() {
   SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
   assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
   printAction "Restarting service $SERVICE_NAME..."
-  sudo service "$SERVICE_NAME" restart
+  restartService "$SERVICE_NAME"
   sleep 3
 
   travis_fold_start "running_PHP$PHP_VERSION" "List of running PHP$PHP_VERSION pools"
@@ -366,7 +366,7 @@ setupPools() {
       SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
       assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
       printAction "Stopping service $SERVICE_NAME..."
-      sudo service "$SERVICE_NAME" stop
+      stopService "$SERVICE_NAME"
     fi
   done <<<"$PHP_LIST"
 
@@ -453,6 +453,28 @@ getAnyPort() {
   echo "$PHP_PORT"
 }
 
+function actionService() {
+  local SERVICE_NAME=$1
+  local SERVICE_ACTION=$2
+  local SERVICE_INFO
+  SERVICE_INFO=$(sudo service "$SERVICE_NAME" $SERVICE_ACTION)
+  STATUS=$?
+  if [[ "$STATUS" -ne 0 ]]; then
+    printRed "Failed to $SERVICE_ACTION service '$SERVICE_NAME':"
+    echo "$SERVICE_INFO"
+  fi
+}
+
+function restartService() {
+  local SERVICE_NAME=$1
+  actionService "$SERVICE_NAME" "restart"
+}
+
+function stopService() {
+  local SERVICE_NAME=$1
+  actionService "$SERVICE_NAME" "stop"
+}
+
 oneTimeSetUp() {
   printAction "Started job $TRAVIS_JOB_NAME"
 
@@ -478,7 +500,7 @@ oneTimeSetUp() {
   sudo cat "/etc/zabbix/zabbix_agentd.conf"
   travis_fold_end "zabbix_agent"
 
-  sudo service zabbix-agent restart
+  restartService "zabbix-agent"
 
   printAction "Setup PHP-FPM..."
 
@@ -499,7 +521,7 @@ setUp() {
 tearDown() {
   restoreUserParameters
   sleep 2
-  sudo service zabbix-agent restart
+  restartService "zabbix-agent"
   sleep 2
 }
 
@@ -612,11 +634,11 @@ testDiscoverScriptSleep() {
   if [[ $CHECK_OK_COUNT -lt 1 ]] || [[ $STOP_OK_COUNT -lt 1 ]]; then
     local SECTION_ID
     SECTION_ID="testDiscoverScriptSleep $(date +%s%3N)"
-    travis_fold_start "$SECTION_ID" "New UserParameter file"
+    travis_fold_start "$SECTION_ID" "Zabbix response data"
     echo "$DATA"
     travis_fold_end "$SECTION_ID"
   fi
-  assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 ]"
+  assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 || $STOP_OK_COUNT -eq 1 ]"
   assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
   printSuccess "${FUNCNAME[0]}"
 }
