@@ -47,6 +47,56 @@ PHP_ETC_DIR=""
 # This variable is used as cache. So, don't use this variable directly. Use function getPHPServiceName
 LIST_OF_SERVICES=""
 
+# ----------------------------------
+# Colors
+# ----------------------------------
+NOCOLOR='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+LIGHTGRAY='\033[0;37m'
+DARKGRAY='\033[1;30m'
+LIGHTRED='\033[1;31m'
+LIGHTGREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+LIGHTBLUE='\033[1;34m'
+LIGHTPURPLE='\033[1;35m'
+LIGHTCYAN='\033[1;36m'
+WHITE='\033[1;37m'
+
+function printYellow() {
+  local info=$1
+  echo -e "${YELLOW}$info${NOCOLOR}"
+}
+
+function printRed() {
+  local info=$1
+  echo -e "${RED}$info${NOCOLOR}"
+}
+
+function printGreen() {
+  local info=$1
+  echo -e "${GREEN}$info${NOCOLOR}"
+}
+
+function printSuccess() {
+  local name=$1
+  printGreen "✓ OK: test '$name' passed"
+}
+
+function printDebug() {
+  local info=$1
+  echo -e "${DARKGRAY}$info${NOCOLOR}"
+}
+
+function printAction() {
+  local info=$1
+  echo -e "${LIGHTBLUE}$info${NOCOLOR}"
+}
+
 function travis_fold_start() {
   local name=$1
   local info=$2
@@ -64,15 +114,18 @@ function getUserParameters() {
 
 function restoreUserParameters() {
   PARAMS_FILE=$(getUserParameters)
-  sudo rm -f $PARAMS_FILE
+  sudo rm -f "$PARAMS_FILE"
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d 2>/dev/null | sort | head -n1)"
 }
 
 function AddSleepToConfig() {
   PARAMS_FILE=$(getUserParameters)
   sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
-  echo "New UserParameter file:"
+  local SECTION_ID
+  SECTION_ID="AddSleepToConfig $(date +%s%3N)"
+  travis_fold_start "$SECTION_ID" "New UserParameter file"
   sudo cat "$PARAMS_FILE"
+  travis_fold_end "$SECTION_ID"
   sudo service zabbix-agent restart
   sleep 2
 }
@@ -275,7 +328,7 @@ setupPool() {
 
   SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
   assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
-  echo "Restarting service $SERVICE_NAME..."
+  printAction "Restarting service $SERVICE_NAME..."
   sudo service "$SERVICE_NAME" restart
   sleep 3
 
@@ -312,7 +365,7 @@ setupPools() {
       assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
       SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
       assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
-      echo "Stopping service $SERVICE_NAME..."
+      printAction "Stopping service $SERVICE_NAME..."
       sudo service "$SERVICE_NAME" stop
     fi
   done <<<"$PHP_LIST"
@@ -401,14 +454,15 @@ getAnyPort() {
 }
 
 oneTimeSetUp() {
-  echo "Started job $TRAVIS_JOB_NAME"
+  printAction "Started job $TRAVIS_JOB_NAME"
+
   travis_fold_start "host_info" "Host information"
   nslookup localhost
   sudo ifconfig
   sudo cat /etc/hosts
   travis_fold_end "host_info"
 
-  echo "Copying Zabbix files..."
+  printAction "Copying Zabbix files..."
   #Install files:
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_discovery.sh" "/etc/zabbix"
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/zabbix_php_fpm_status.sh" "/etc/zabbix"
@@ -426,12 +480,12 @@ oneTimeSetUp() {
 
   sudo service zabbix-agent restart
 
-  echo "Setup PHP-FPM..."
+  printAction "Setup PHP-FPM..."
 
   #Setup PHP-FPM pools:
   setupPools
 
-  echo "All done, starting tests..."
+  printAction "All done, starting tests..."
 }
 
 #Called before every test
@@ -452,6 +506,7 @@ tearDown() {
 testZabbixGetInstalled() {
   ZABBIX_GET=$(type -P zabbix_get)
   assertNotNull "Utility zabbix-get not installed" "$ZABBIX_GET"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixAgentVersion() {
@@ -459,6 +514,7 @@ testZabbixAgentVersion() {
   REQUESTED_VERSION=$(echo "$TRAVIS_JOB_NAME" | grep -i -F "zabbix" | head -n1 | cut -d "@" -f1 | cut -d " " -f2)
   INSTALLED_VERSION=$(zabbix_agentd -V | grep -F "zabbix" | head -n1 | rev | cut -d " " -f1 | rev | cut -d "." -f1,2)
   assertSame "Requested version $REQUESTED_VERSION and installed version $INSTALLED_VERSION of Zabbix agent do not match" "$REQUESTED_VERSION" "$INSTALLED_VERSION"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixGetVersion() {
@@ -466,11 +522,13 @@ testZabbixGetVersion() {
   REQUESTED_VERSION=$(echo "$TRAVIS_JOB_NAME" | grep -i -F "zabbix" | head -n1 | cut -d "@" -f1 | cut -d " " -f2)
   INSTALLED_VERSION=$(zabbix_get -V | grep -F "zabbix" | head -n1 | rev | cut -d " " -f1 | rev | cut -d "." -f1,2)
   assertSame "Requested version $REQUESTED_VERSION and installed version $INSTALLED_VERSION of zabbix_get do not match" "$REQUESTED_VERSION" "$INSTALLED_VERSION"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testPHPIsRunning() {
   IS_OK=$(sudo ps ax | grep -F "php-fpm: pool " | grep -F -v "grep" | head -n1)
   assertNotNull "No running PHP-FPM instances found" "$IS_OK"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testStatusScriptSocket() {
@@ -478,7 +536,8 @@ testStatusScriptSocket() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $TEST_SOCKET: $DATA" "$IS_OK"
-  echo "Success test of $TEST_SOCKET"
+  printGreen "Success test of $TEST_SOCKET"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testStatusScriptPort() {
@@ -489,14 +548,16 @@ testStatusScriptPort() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
-  echo "Success test of $PHP_POOL"
+  printGreen "Success test of $PHP_POOL"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixStatusSocket() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$TEST_SOCKET","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
-  echo "Success test of $PHP_POOL"
+  printGreen "Success test of $PHP_POOL"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixStatusPort() {
@@ -506,13 +567,15 @@ testZabbixStatusPort() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
-  echo "Success test of $PHP_POOL"
+  printGreen "Success test of $PHP_POOL"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testDiscoverScriptReturnsData() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testDiscoverScriptDebug() {
@@ -521,18 +584,21 @@ testDiscoverScriptDebug() {
   PHP_COUNT=$(getNumberOfPHPVersions)
   if [[ $PHP_COUNT != "$NUMBER_OF_ERRORS" ]]; then
     ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
-    echo "Errors list:"
-    echo "$ERRORS_LIST"
-    echo "Full output:"
+    printYellow "Errors list:"
+    printYellow "$ERRORS_LIST"
+    travis_fold_start "testDiscoverScriptDebug_full" "Full output"
     echo "$DATA"
+    travis_fold_end "testDiscoverScriptDebug_full"
   fi
   assertEquals "Discover script errors mismatch" "$PHP_COUNT" "$NUMBER_OF_ERRORS"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverReturnsData() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testDiscoverScriptSleep() {
@@ -540,14 +606,19 @@ testDiscoverScriptSleep() {
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
 
-  echo "Success time checks: $CHECK_OK_COUNT"
-  echo "Stop time checks: $STOP_OK_COUNT"
+  printYellow "Success time checks: $CHECK_OK_COUNT"
+  printYellow "Stop time checks: $STOP_OK_COUNT"
 
   if [[ $CHECK_OK_COUNT -lt 1 ]] || [[ $STOP_OK_COUNT -lt 1 ]]; then
+    local SECTION_ID
+    SECTION_ID="testDiscoverScriptSleep $(date +%s%3N)"
+    travis_fold_start "$SECTION_ID" "New UserParameter file"
     echo "$DATA"
+    travis_fold_end "$SECTION_ID"
   fi
   assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 ]"
   assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverSleep() {
@@ -555,6 +626,7 @@ testZabbixDiscoverSleep() {
   AddSleepToConfig
 
   testZabbixDiscoverReturnsData
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testDiscoverScriptRunDuration() {
@@ -566,11 +638,12 @@ testDiscoverScriptRunDuration() {
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
   MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
-  echo "Elapsed time $ELAPSED_TIME ms"
-  echo "Success time checks: $CHECK_OK_COUNT"
-  echo "Stop time checks: $STOP_OK_COUNT"
+  printYellow "Elapsed time $ELAPSED_TIME ms"
+  printYellow "Success time checks: $CHECK_OK_COUNT"
+  printYellow "Stop time checks: $STOP_OK_COUNT"
 
   assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverRunDuration() {
@@ -583,16 +656,18 @@ testZabbixDiscoverRunDuration() {
   ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
   MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
-  echo "Elapsed time $ELAPSED_TIME ms"
+  printYellow "Elapsed time $ELAPSED_TIME ms"
 
   assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testDiscoverScriptDoubleRun() {
   DATA_FIRST=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
   DATA_SECOND=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
 
-  assertNotEquals "Multiple discovery routines provide the same results" "$DATA_FIRST" "$DATA_SECOND"
+  assertNotEquals "Multiple discovery routines provide the same results: $DATA_FIRST" "$DATA_FIRST" "$DATA_SECOND"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverDoubleRun() {
@@ -603,6 +678,7 @@ testZabbixDiscoverDoubleRun() {
   DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
 
   assertNotEquals "Multiple discovery routines provide the same results: $DATA_FIRST" "$DATA_FIRST" "$DATA_SECOND"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 function discoverAllZabbix() {
@@ -620,8 +696,10 @@ function discoverAllZabbix() {
   else
     DATA_COUNT=$(echo "$DATA_COUNT + 1" | bc)
     if [[ $DATA_COUNT -gt $MAX_CHECKS ]]; then
-      echo "Data old: $DATA_OLD"
-      echo "Data new: $DATA"
+      printYellow "Data old:"
+      printDebug "$DATA_OLD"
+      printYellow "Data new:"
+      printDebug "$DATA"
       return 1
     fi
     discoverAllZabbix "$DATA" "$DATA_COUNT"
@@ -656,44 +734,51 @@ checkNumberOfPools() {
 
 testZabbixDiscoverNumberOfSocketPools() {
   checkNumberOfPools "socket"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfDynamicPools() {
   checkNumberOfPools "dynamic"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsCold() {
   #If the pools are not started then we have 0 here:
   checkNumberOfPools "ondemand" 0
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsHot() {
   startOndemandPoolsCache
   checkNumberOfPools "ondemand"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfOndemandPoolsCache() {
   startOndemandPoolsCache
 
-  echo "Empty cache test..."
+  printAction "Empty cache test..."
   INITIAL_DATA=$(checkNumberOfPools "ondemand")
 
   WAIT_TIMEOUT=$(echo "$ONDEMAND_TIMEOUT * 2" | bc)
   sleep "$WAIT_TIMEOUT"
 
-  echo "Full cache test..."
+  printAction "Full cache test..."
   CACHED_DATA=$(checkNumberOfPools "ondemand")
 
   assertEquals "Data mismatch" "$INITIAL_DATA" "$CACHED_DATA"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfIPPools() {
   PHP_COUNT=$(getNumberOfPHPVersions)
   checkNumberOfPools "localhost" "$PHP_COUNT"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverNumberOfPortPools() {
   checkNumberOfPools "port"
+  printSuccess "${FUNCNAME[0]}"
 }
 
 #This test should be last in Zabbix tests
@@ -704,29 +789,31 @@ testDiscoverScriptManyPools() {
   setupPools
 
   testDiscoverScriptReturnsData
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverManyPools() {
   testZabbixDiscoverReturnsData
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testDiscoverScriptManyPoolsRunDuration() {
   MAX_RUNS=5
   for ((c = 1; c <= MAX_RUNS; c++)); do
-    echo "Run #$c..."
+    printAction "Run #$c..."
     testDiscoverScriptRunDuration
   done
+  printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverManyPoolsRunDuration() {
   MAX_RUNS=5
   for ((c = 1; c <= MAX_RUNS; c++)); do
-    echo "Run #$c..."
+    printAction "Run #$c..."
     testZabbixDiscoverRunDuration
   done
+  printSuccess "${FUNCNAME[0]}"
 }
 
 # Load shUnit2.
 . shunit2
-
-}
