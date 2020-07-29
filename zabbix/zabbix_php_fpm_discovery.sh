@@ -152,13 +152,15 @@ function PrintDebug() {
 # - pool socket
 # Function returns 1 if all OK, and 0 otherwise.
 function EncodeToJson() {
-  POOL_NAME=$1
-  POOL_SOCKET=$2
+  local POOL_NAME=$1
+  local POOL_SOCKET=$2
   if [[ -z ${POOL_NAME} ]] || [[ -z ${POOL_SOCKET} ]]; then
     return 0
   fi
 
+  local JSON_POOL
   JSON_POOL=$(echo -n "$POOL_NAME" | ${S_JQ} -aR .)
+  local JSON_SOCKET
   JSON_SOCKET=$(echo -n "$POOL_SOCKET" | ${S_JQ} -aR .)
   if [[ ${POOL_FIRST} == 1 ]]; then
     RESULT_DATA="$RESULT_DATA,"
@@ -174,9 +176,10 @@ function EncodeToJson() {
 # - pool socket
 # - pool type
 function UpdatePoolInCache() {
-  POOL_NAME=$1
-  POOL_SOCKET=$2
-  POOL_TYPE=$3
+  local POOL_NAME=$1
+  local POOL_SOCKET=$2
+  local POOL_TYPE=$3
+  local UNSET_USED=""
 
   if [[ -z $POOL_NAME ]] || [[ -z $POOL_SOCKET ]] || [[ -z $POOL_TYPE ]]; then
     PrintDebug "Error: Invalid arguments for UpdatePoolInCache"
@@ -184,19 +187,31 @@ function UpdatePoolInCache() {
   fi
 
   for ITEM_INDEX in "${!CACHE[@]}"; do
-    CACHE_ITEM="${CACHE[$ITEM_INDEX]}"
+    local CACHE_ITEM="${CACHE[$ITEM_INDEX]}"
+
+    local ITEM_NAME
     # shellcheck disable=SC2016
     ITEM_NAME=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $1}')
+
+    local ITEM_SOCKET
     # shellcheck disable=SC2016
     ITEM_SOCKET=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $2}')
+
+    local ITEM_POOL_TYPE
     # shellcheck disable=SC2016
     ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $3}')
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
       #Deleting the pool first
-      mapfile -d $'\0' -t CACHE < <($S_PRINTF '%s\0' "${CACHE[@]}" | $S_GREP -Fwzv "$ITEM_NAME $ITEM_SOCKET")
+      unset "CACHE[$ITEM_INDEX]"
+      UNSET_USED="1"
     fi
   done
+
+  if [[ -n "$UNSET_USED" ]]; then
+    #Renumber the indexes
+    CACHE=("${CACHE[@]}")
+  fi
 
   CACHE+=("$POOL_NAME $POOL_SOCKET $POOL_TYPE")
   PrintDebug "Added pool $POOL_NAME $POOL_SOCKET to cache list"
@@ -205,28 +220,42 @@ function UpdatePoolInCache() {
 
 # Removes pools from cache that are currently inactive and are missing in pending list
 function UpdateCacheList() {
+  local UNSET_USED=""
+
   for ITEM_INDEX in "${!CACHE[@]}"; do
-    CACHE_ITEM="${CACHE[$ITEM_INDEX]}"
+    local CACHE_ITEM="${CACHE[$ITEM_INDEX]}"
+
+    local ITEM_NAME
     # shellcheck disable=SC2016
     ITEM_NAME=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $1}')
+
+    local ITEM_SOCKET
     # shellcheck disable=SC2016
     ITEM_SOCKET=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $2}')
+
+    local ITEM_POOL_TYPE
     # shellcheck disable=SC2016
     ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $3}')
 
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
       #Deleting the pool first
-      mapfile -d $'\0' -t CACHE < <($S_PRINTF '%s\0' "${CACHE[@]}" | $S_GREP -Fwzv "ITEM_NAME $ITEM_SOCKET")
+      unset "CACHE[$ITEM_INDEX]"
+      UNSET_USED="1"
     fi
   done
+
+  if [[ -n "$UNSET_USED" ]]; then
+    #Renumber the indexes
+    CACHE=("${CACHE[@]}")
+  fi
 }
 
 # Checks if selected pool is in pending list
 # Function returns 1 if pool is in list, and 0 otherwise
 function IsInPendingList() {
-  POOL_NAME=$1
-  POOL_SOCKET=$2
+  local POOL_NAME=$1
+  local POOL_SOCKET=$2
 
   if [[ -z $POOL_NAME ]] || [[ -z $POOL_SOCKET ]]; then
     PrintDebug "Error: Invalid arguments for IsInPendingList"
@@ -246,8 +275,8 @@ function IsInPendingList() {
 # A new pool is added to the end of the list.
 # Function returns 1, if a pool was added, and 0 otherwise.
 function AddPoolToPendingList() {
-  POOL_NAME=$1
-  POOL_SOCKET=$2
+  local POOL_NAME=$1
+  local POOL_SOCKET=$2
 
   if [[ -z $POOL_NAME ]] || [[ -z $POOL_SOCKET ]]; then
     PrintDebug "Error: Invalid arguments for AddPoolToPendingList"
@@ -255,7 +284,7 @@ function AddPoolToPendingList() {
   fi
 
   IsInPendingList "$POOL_NAME" "$POOL_SOCKET"
-  FOUND=$?
+  local FOUND=$?
 
   if [[ ${FOUND} == 1 ]]; then
     #Already in list, quit
@@ -272,25 +301,31 @@ function AddPoolToPendingList() {
 # Removes a pool from pending list
 # Returns 1 if success, 0 otherwise
 function DeletePoolFromPendingList() {
-  POOL_NAME=$1
-  POOL_SOCKET=$2
+  local POOL_NAME=$1
+  local POOL_SOCKET=$2
+  local UNSET_USED=""
 
   if [[ -z $POOL_NAME ]] || [[ -z $POOL_SOCKET ]]; then
     PrintDebug "Error: Invalid arguments for DeletePoolFromPendingList"
     return 0
   fi
 
-  IsInPendingList "$POOL_NAME" "$POOL_SOCKET"
-  FOUND=$?
+  for ITEM_INDEX in "${!PENDING_LIST[@]}"; do
+    local PENDING_ITEM="${PENDING_LIST[$ITEM_INDEX]}"
+    if [[ "$PENDING_ITEM" == "$POOL_NAME $POOL_SOCKET" ]]; then
+      unset "PENDING_LIST[$ITEM_INDEX]"
+      UNSET_USED="1"
+    fi
+  done
 
-  if [[ ${FOUND} == 0 ]]; then
+  if [[ -z "$UNSET_USED" ]]; then
     #Not in list, quit
     PrintDebug "Error: Pool $POOL_NAME $POOL_SOCKET is already missing in pending list"
     return 0
   fi
 
-  #Otherwise we remove this pool from the list
-  mapfile -d $'\0' -t PENDING_LIST < <($S_PRINTF '%s\0' "${PENDING_LIST[@]}" | $S_GREP -Fxzv "$POOL_NAME $POOL_SOCKET")
+  #Renumber the indexes
+  PENDING_LIST=("${PENDING_LIST[@]}")
   PrintDebug "Removed pool $POOL_NAME $POOL_SOCKET from pending list"
   return 1
 }
@@ -326,8 +361,11 @@ function SavePrintResults() {
   RESULT_DATA="{\"data\":["
 
   for CACHE_ITEM in "${CACHE[@]}"; do
+    local ITEM_NAME
     # shellcheck disable=SC2016
     ITEM_NAME=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $1}')
+
+    local ITEM_SOCKET
     # shellcheck disable=SC2016
     ITEM_SOCKET=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $2}')
     EncodeToJson "${ITEM_NAME}" "${ITEM_SOCKET}"
@@ -339,7 +377,10 @@ function SavePrintResults() {
 }
 
 function CheckExecutionTime() {
+  local CURRENT_TIME
   CURRENT_TIME=$($S_DATE +%s%N)
+
+  local ELAPSED_TIME
   ELAPSED_TIME=$(echo "($CURRENT_TIME - $START_TIME)/1000000" | $S_BC)
   if [[ $ELAPSED_TIME -lt $MAX_EXECUTION_TIME ]]; then
     #All good, we can continue
@@ -361,15 +402,16 @@ function CheckExecutionTime() {
 # 0 if the pool is invalid
 # 1 if the pool is OK
 function CheckPool() {
-  POOL_NAME=$1
-  POOL_SOCKET=$2
+  local POOL_NAME=$1
+  local POOL_SOCKET=$2
   if [[ -z ${POOL_NAME} ]] || [[ -z ${POOL_SOCKET} ]]; then
     PrintDebug "Error: Invalid arguments for CheckPool"
     return 0
   fi
 
+  local STATUS_JSON
   STATUS_JSON=$(${S_BASH} "${STATUS_SCRIPT}" "${POOL_SOCKET}" ${STATUS_PATH})
-  EXIT_CODE=$?
+  local EXIT_CODE=$?
   if [[ ${EXIT_CODE} == 0 ]]; then
     # The exit code is OK, let's check the JSON data
     # JSON data example:
@@ -378,6 +420,7 @@ function CheckPool() {
     if [[ -n $(echo "${STATUS_JSON}" | ${S_GREP} -G '^{.*\"pool\":\".\+\".*,\"process manager\":\".\+\".*}$') ]]; then
       PrintDebug "Status data for pool $POOL_NAME, socket $POOL_SOCKET, status path $STATUS_PATH is valid"
 
+      local PROCESS_MANAGER
       PROCESS_MANAGER=$(echo "$STATUS_JSON" | $S_GREP -oP '"process manager":"\K([a-z]+)')
       if [[ -n $PROCESS_MANAGER ]]; then
         PrintDebug "Detected pool's process manager is $PROCESS_MANAGER"
@@ -412,15 +455,16 @@ function sleepNow() {
 
 # Analysis of pool by name, scans the processes, and adds them to pending list for further checks
 function AnalyzePool() {
-  POOL_NAME=$1
+  local POOL_NAME=$1
   if [[ -z ${POOL_NAME} ]]; then
     PrintDebug "Invalid arguments for AnalyzePool"
     return 0
   fi
 
+  local POOL_PID_LIST
   # shellcheck disable=SC2016
   POOL_PID_LIST=$(${S_PRINTF} '%s\n' "${PS_LIST[@]}" | $S_GREP -F -w "php-fpm: pool $POOL_NAME" | $S_AWK '{print $1}')
-  POOL_PID_ARGS=""
+  local POOL_PID_ARGS=""
   while IFS= read -r POOL_PID; do
     if [[ -n $POOL_PID ]]; then
       POOL_PID_ARGS="$POOL_PID_ARGS -p $POOL_PID"
@@ -447,14 +491,17 @@ function AnalyzePool() {
     #Sometimes different PHP-FPM versions may have the same names of pools, so we need to consider that.
     # It's considered that a pair of pool name and socket must be unique.
     #Sorting is required, because uniq needs it
+    local POOL_PARAMS_LIST
     # shellcheck disable=SC2086
     POOL_PARAMS_LIST=$($S_LSOF -n -P $POOL_PID_ARGS 2>/dev/null | $S_GREP -w -e "unix" -e "TCP" | $S_SORT -u | $S_UNIQ -f8)
-    FOUND_POOL=""
+    local FOUND_POOL=""
     while IFS= read -r pool; do
       if [[ -n $pool ]]; then
         PrintDebug "Checking process: $pool"
+        local POOL_TYPE
         # shellcheck disable=SC2016
         POOL_TYPE=$(echo "${pool}" | $S_AWK '{print $5}')
+        local POOL_SOCKET
         # shellcheck disable=SC2016
         POOL_SOCKET=$(echo "${pool}" | $S_AWK '{print $9}')
         if [[ -n $POOL_TYPE ]] && [[ -n $POOL_SOCKET ]]; then
@@ -469,10 +516,12 @@ function AnalyzePool() {
             fi
           elif [[ $POOL_TYPE == "IPv4" ]] || [[ $POOL_TYPE == "IPv6" ]]; then
             #We have a TCP connection here, check it:
+            local CONNECTION_TYPE
             # shellcheck disable=SC2016
             CONNECTION_TYPE=$(echo "${pool}" | $S_AWK '{print $8}')
             if [[ $CONNECTION_TYPE == "TCP" ]]; then
               #The connection must have state LISTEN:
+              local LISTEN
               LISTEN=$(echo "${pool}" | $S_GREP -F -w "(LISTEN)")
               if [[ -n $LISTEN ]]; then
                 #Check and replace * to localhost if it's found. Asterisk means that the PHP listens on
@@ -510,10 +559,12 @@ function AnalyzePool() {
 
 # Prints list of pools in pending list
 function PrintPendingList() {
-  COUNTER=1
+  local COUNTER=1
   for POOL_ITEM in "${PENDING_LIST[@]}"; do
+    local POOL_NAME
     # shellcheck disable=SC2016
     POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK '{print $1}')
+    local POOL_SOCKET
     # shellcheck disable=SC2016
     POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK '{print $2}')
     if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]]; then
@@ -525,12 +576,15 @@ function PrintPendingList() {
 
 # Prints list of pools in cache
 function PrintCacheList() {
-  COUNTER=1
+  local COUNTER=1
   for POOL_ITEM in "${CACHE[@]}"; do
+    local POOL_NAME
     # shellcheck disable=SC2016
     POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK '{print $1}')
+    local POOL_SOCKET
     # shellcheck disable=SC2016
     POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK '{print $2}')
+    local PROCESS_MANAGER
     # shellcheck disable=SC2016
     PROCESS_MANAGER=$(echo "$POOL_ITEM" | $S_AWK '{print $3}')
     if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]] && [[ -n "$PROCESS_MANAGER" ]]; then
@@ -542,8 +596,8 @@ function PrintCacheList() {
 
 # Functions processes a pool by name: makes all required checks and adds it to cache, etc.
 function ProcessPool() {
-  POOL_NAME=$1
-  POOL_SOCKET=$2
+  local POOL_NAME=$1
+  local POOL_SOCKET=$2
   if [[ -z $POOL_NAME ]] || [[ -z $POOL_SOCKET ]]; then
     PrintDebug "Invalid arguments for ProcessPool"
     return 0
@@ -551,9 +605,8 @@ function ProcessPool() {
 
   PrintDebug "Processing pool $POOL_NAME $POOL_SOCKET"
   CheckPool "$POOL_NAME" "${POOL_SOCKET}"
-  POOL_STATUS=$?
+  local POOL_STATUS=$?
   if [[ ${POOL_STATUS} -gt 0 ]]; then
-    FOUND_POOL="1"
     PrintDebug "Success: socket $POOL_SOCKET returned valid status data"
   else
     PrintDebug "Error: socket $POOL_SOCKET didn't return valid data"
