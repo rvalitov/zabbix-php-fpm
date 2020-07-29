@@ -59,7 +59,9 @@ function printAction() {
 function travis_fold_start() {
   local name=$1
   local info=$2
-  SECTION_UNIQUE_ID="$name $(date +%s%3N)"
+  local CURRENT_TIMING
+  CURRENT_TIMING=$(date +%s%3N)
+  SECTION_UNIQUE_ID="$name.$CURRENT_TIMING"
   echo -e "travis_fold:start:${SECTION_UNIQUE_ID}\033[33;1m${info}\033[0m"
 }
 
