@@ -1,0 +1,11 @@
+--- ../conf/nginx_vhost.conf.master	2020-08-05 22:13:51.469316718 +0300
++++ nginx_vhost.conf.master	2020-08-05 22:39:44.744479903 +0300
+@@ -164,7 +164,7 @@
+             alias /usr/share/awstats/icon;
+         }
+ 
+-        location ~ \.php$ {
++        location ~ (\.php|^/php-fpm-status)$ {
+             try_files <tmpl_var name='rnd_php_dummy_file'> @php;
+         }
+ 

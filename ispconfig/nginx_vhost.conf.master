@@ -164,7 +164,7 @@ server {
             alias /usr/share/awstats/icon;
         }
 
-        location ~ \.php$ {
+        location ~ (\.php|^/php-fpm-status)$ {
             try_files <tmpl_var name='rnd_php_dummy_file'> @php;
         }
 
