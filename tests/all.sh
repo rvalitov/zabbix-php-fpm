@@ -460,12 +460,14 @@ function actionService() {
   local SERVICE_NAME=$1
   local SERVICE_ACTION=$2
   local SERVICE_INFO
+  sleep 3
   SERVICE_INFO=$(sudo service "$SERVICE_NAME" $SERVICE_ACTION)
   STATUS=$?
   if [[ "$STATUS" -ne 0 ]]; then
     printRed "Failed to $SERVICE_ACTION service '$SERVICE_NAME':"
     echo "$SERVICE_INFO"
   fi
+  sleep 3
 }
 
 function restartService() {
