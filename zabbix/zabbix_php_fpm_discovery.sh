@@ -25,6 +25,15 @@ USE_SLEEP_TIMEOUT=""
 #Sleep timeout in seconds
 SLEEP_TIMEOUT="0.5"
 
+#Parent directory where all cache files are localted in the OS
+CACHE_ROOT="/var/cache"
+
+#Name of the private directory to store the cache files
+CACHE_DIR_NAME="zabbix-php-fpm"
+
+#Full path to directory to store cache files
+CACHE_DIRECTORY="$CACHE_ROOT/$CACHE_DIR_NAME"
+
 #Checking all the required executables
 S_PS=$(type -P ps)
 S_GREP=$(type -P grep)
@@ -118,18 +127,42 @@ if [[ "${BASH_VERSINFO:-0}" -lt 4 ]]; then
   exit 1
 fi
 
+if [[ ! -d "$CACHE_ROOT" ]]; then
+  ${S_ECHO} "The OS cache directory '$CACHE_ROOT' not found in the system."
+  exit 1
+fi
+
+function createCacheDirectory() {
+  if [[ ! -d "$CACHE_DIRECTORY" ]]; then
+    mkdir "$CACHE_DIRECTORY"
+  fi
+  if [[ ! -d "$CACHE_DIRECTORY" ]]; then
+    return 1
+  fi
+
+  chmod 700 "$CACHE_DIRECTORY"
+  return 0
+}
+
+createCacheDirectory
+EXIT_CODE=$?
+if [[ ${EXIT_CODE} -ne 0 ]]; then
+  ${S_ECHO} "Failed to create cache directory '$CACHE_DIRECTORY'."
+  exit 1
+fi
+
 #Local directory
 LOCAL_DIR=$(${S_DIRNAME} "$0")
 
 #Cache file for pending pools, used to store execution state
 #File format:
 #<pool name> <socket or TCP>
-PENDING_FILE="$LOCAL_DIR/php_fpm_pending.cache"
+PENDING_FILE="$CACHE_DIRECTORY/php_fpm_pending.cache"
 
 #Cache file with list of active pools, used to store execution state
 #File format:
 #<pool name> <socket or TCP> <pool manager type>
-RESULTS_CACHE_FILE="$LOCAL_DIR/php_fpm_results.cache"
+RESULTS_CACHE_FILE="$CACHE_DIRECTORY/php_fpm_results.cache"
 
 #Path to status script, another script of this bundle
 STATUS_SCRIPT="$LOCAL_DIR/zabbix_php_fpm_status.sh"
@@ -331,6 +364,9 @@ function DeletePoolFromPendingList() {
 }
 
 function SavePrintResults() {
+  #Checking and creating cache directory just in case:
+  createCacheDirectory
+
   #Saving pending list:
   if [[ -f $PENDING_FILE ]] && [[ ! -w $PENDING_FILE ]]; then
     echo "Error: write permission is not granted to user $ACTIVE_USER for cache file $PENDING_FILE"
