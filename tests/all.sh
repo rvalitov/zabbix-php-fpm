@@ -528,7 +528,7 @@ oneTimeSetUp() {
 setUp() {
   #Delete all cache files
   if [[ -d "$CACHE_DIRECTORY" ]]; then
-    find "$CACHE_DIRECTORY" -type f -exec rm '{}' \;
+    sudo find "$CACHE_DIRECTORY" -type f -exec rm '{}' \;
   fi
 }
 
