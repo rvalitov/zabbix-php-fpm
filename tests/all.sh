@@ -527,7 +527,9 @@ oneTimeSetUp() {
 #Called before every test
 setUp() {
   #Delete all cache files
-  find "$CACHE_DIRECTORY" -type f -exec rm '{}' \;
+  if [[ -d "$CACHE_DIRECTORY" ]]; then
+    find "$CACHE_DIRECTORY" -type f -exec rm '{}' \;
+  fi
 }
 
 #Called after every test
