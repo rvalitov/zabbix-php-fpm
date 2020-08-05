@@ -50,6 +50,15 @@ LIST_OF_SERVICES=""
 # Used for section folding in Travis CI
 SECTION_UNIQUE_ID=""
 
+#Parent directory where all cache files are located in the OS
+CACHE_ROOT="/var/cache"
+
+#Name of the private directory to store the cache files
+CACHE_DIR_NAME="zabbix-php-fpm"
+
+#Full path to directory to store cache files
+CACHE_DIRECTORY="$CACHE_ROOT/$CACHE_DIR_NAME"
+
 # ----------------------------------
 # Colors
 # ----------------------------------
@@ -518,8 +527,7 @@ oneTimeSetUp() {
 #Called before every test
 setUp() {
   #Delete all cache files
-  sudo rm -f "/etc/zabbix/php_fpm_results.cache"
-  sudo rm -f "/etc/zabbix/php_fpm_pending.cache"
+  find "$CACHE_DIRECTORY" -type f -exec rm '{}' \;
 }
 
 #Called after every test

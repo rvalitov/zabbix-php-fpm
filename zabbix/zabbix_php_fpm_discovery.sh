@@ -25,7 +25,7 @@ USE_SLEEP_TIMEOUT=""
 #Sleep timeout in seconds
 SLEEP_TIMEOUT="0.5"
 
-#Parent directory where all cache files are localted in the OS
+#Parent directory where all cache files are located in the OS
 CACHE_ROOT="/var/cache"
 
 #Name of the private directory to store the cache files
