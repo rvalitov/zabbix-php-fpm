@@ -1,0 +1,376 @@
+server {
+        listen <tmpl_var name='ip_address'>:<tmpl_var name='http_port'>;
+<tmpl_if name='ipv6_enabled'>
+        listen [<tmpl_var name='ipv6_address'>]:<tmpl_var name='http_port'>;
+</tmpl_if>
+<tmpl_if name='ipv6_wildcard'>
+        listen [::]:<tmpl_var name='http_port'>;
+</tmpl_if>
+<tmpl_if name='ssl_enabled'>
+        listen <tmpl_var name='ip_address'>:<tmpl_var name='https_port'> ssl{tmpl_if name='enable_http2' op='==' value='y'} http2{/tmpl_if}{tmpl_if name='enable_spdy' op='==' value='y'} spdy{/tmpl_if};
+		ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+		# ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS';
+		# ssl_prefer_server_ciphers on;
+<tmpl_if name='ipv6_enabled'>
+        listen [<tmpl_var name='ipv6_address'>]:<tmpl_var name='https_port'> ssl{tmpl_if name='enable_http2' op='==' value='y'} http2{/tmpl_if}{tmpl_if name='enable_spdy' op='==' value='y'} spdy{/tmpl_if};
+</tmpl_if>
+<tmpl_if name='ipv6_wildcard'>
+        listen [::]:<tmpl_var name='https_port'> ssl{tmpl_if name='enable_http2' op='==' value='y'} http2{/tmpl_if}{tmpl_if name='enable_spdy' op='==' value='y'} spdy{/tmpl_if};
+</tmpl_if>
+        ssl_certificate <tmpl_var name='ssl_crt_file'>;
+        ssl_certificate_key <tmpl_var name='ssl_key_file'>;
+</tmpl_if>
+        
+        server_name <tmpl_var name='domain'> <tmpl_var name='alias'>;
+
+        root   <tmpl_var name='web_document_root_www'>;
+		
+<tmpl_if name='ssl_enabled'>
+<tmpl_if name='rewrite_to_https' op='==' value='y'>
+        if ($scheme != "https") {
+            rewrite ^ https://$http_host$request_uri? permanent;
+        }
+</tmpl_if>
+</tmpl_if>
+<tmpl_if name='seo_redirect_enabled'>
+        if ($http_host <tmpl_var name='seo_redirect_operator'> "<tmpl_var name='seo_redirect_origin_domain'>") {
+            rewrite ^ $scheme://<tmpl_var name='seo_redirect_target_domain'>$request_uri? permanent;
+        }
+</tmpl_if>
+<tmpl_loop name="alias_seo_redirects">
+        if ($http_host <tmpl_var name='alias_seo_redirect_operator'> "<tmpl_var name='alias_seo_redirect_origin_domain'>") {
+            rewrite ^ $scheme://<tmpl_var name='alias_seo_redirect_target_domain'>$request_uri? permanent;
+        }
+</tmpl_loop>
+<tmpl_loop name="local_redirects">
+        if ($http_host <tmpl_var name='local_redirect_operator'> "<tmpl_var name='local_redirect_origin_domain'>") {
+            rewrite ^<tmpl_var name='local_redirect_exclude'>(.*)$ <tmpl_var name='local_redirect_target'>$2 <tmpl_var name='local_redirect_type'>;
+        }
+</tmpl_loop>
+
+<tmpl_loop name="own_redirects">
+<tmpl_if name='use_rewrite'>
+        <tmpl_if name='exclude_own_hostname'>if ($http_host != "<tmpl_var name='exclude_own_hostname'>") { </tmpl_if>rewrite ^<tmpl_var name='rewrite_exclude'>(.*)$ <tmpl_var name='rewrite_target'>$2 <tmpl_var name='rewrite_type'>;<tmpl_if name='exclude_own_hostname'> }</tmpl_if>
+</tmpl_if>
+<tmpl_if name='use_proxy'>
+        location / {
+            proxy_pass <tmpl_var name='rewrite_target'>;
+            <tmpl_if name='rewrite_subdir'>rewrite ^/<tmpl_var name='rewrite_subdir'>(.*) /$1;</tmpl_if>
+<tmpl_loop name="proxy_directives">
+        <tmpl_var name='proxy_directive'>
+</tmpl_loop>
+        }
+</tmpl_if>
+</tmpl_loop>
+<tmpl_if name='use_proxy' op='!=' value='y'>		
+        index index.html index.htm index.php index.cgi index.pl index.xhtml;
+		
+<tmpl_if name='ssi' op='==' value='y'>		
+        location ~ \.shtml$ {
+            ssi on;
+        }
+</tmpl_if>
+
+<tmpl_if name='errordocs'>		
+        error_page 400 /error/400.html;
+        error_page 401 /error/401.html;
+        error_page 403 /error/403.html;
+        error_page 404 /error/404.html;
+        error_page 405 /error/405.html;
+        error_page 500 /error/500.html;
+        error_page 502 /error/502.html;
+        error_page 503 /error/503.html;
+        recursive_error_pages on;
+        location = /error/400.html {
+            <tmpl_var name='web_document_root_www_proxy'>
+            internal;
+        }
+        location = /error/401.html {
+            <tmpl_var name='web_document_root_www_proxy'>
+            internal;
+        }
+        location = /error/403.html {
+            <tmpl_var name='web_document_root_www_proxy'>
+            internal;
+        }
+        location = /error/404.html {
+            <tmpl_var name='web_document_root_www_proxy'>
+            internal;
+        }
+        location = /error/405.html {
+            <tmpl_var name='web_document_root_www_proxy'>
+            internal;
+        }
+        location = /error/500.html {
+            <tmpl_var name='web_document_root_www_proxy'>
+            internal;
+        }
+        location = /error/502.html {
+            <tmpl_var name='web_document_root_www_proxy'>
+            internal;
+        }
+        location = /error/503.html {
+            <tmpl_var name='web_document_root_www_proxy'>
+            internal;
+        }
+</tmpl_if>
+		
+<tmpl_if name='logging' op='==' value='yes'>
+        error_log /var/log/ispconfig/httpd/<tmpl_var name='domain'>/error.log;
+        access_log /var/log/ispconfig/httpd/<tmpl_var name='domain'>/access.log combined;
+</tmpl_var>
+<tmpl_if name='logging' op='==' value='anon'>
+        error_log /var/log/ispconfig/httpd/<tmpl_var name='domain'>/error.log;
+        access_log /var/log/ispconfig/httpd/<tmpl_var name='domain'>/access.log anonymized;
+</tmpl_var>
+
+        ## Disable .htaccess and other hidden files
+		location ~ /\. {
+			deny all;
+		}
+
+        ## Allow access for .well-known/acme-challenge
+		location ^~ /.well-known/acme-challenge/ {
+			access_log off;
+			log_not_found off;
+			auth_basic off;
+			root /usr/local/ispconfig/interface/acme/;
+			autoindex off;
+			index index.html;
+			try_files $uri $uri/ =404;
+        }
+		
+        location = /favicon.ico {
+            log_not_found off;
+            access_log off;
+            expires max;
+            add_header Cache-Control "public, must-revalidate, proxy-revalidate";
+        }
+
+        location = /robots.txt {
+            allow all;
+            log_not_found off;
+            access_log off;
+        }
+		
+        location /stats/ {
+            <tmpl_var name='web_document_root_www_proxy'>
+            index index.html index.php;
+            auth_basic "Members Only";
+            auth_basic_user_file <tmpl_var name='stats_auth_passwd_file'>;
+        }
+
+        location ^~ /awstats-icon {
+            alias /usr/share/awstats/icon;
+        }
+
+        location ~ \.php$ {
+            try_files <tmpl_var name='rnd_php_dummy_file'> @php;
+        }
+
+<tmpl_if name='php' op='==' value='php-fpm'>
+        location @php {
+            try_files $uri =404;
+            include /etc/nginx/fastcgi_params;
+<tmpl_if name='use_tcp'>
+            fastcgi_pass 127.0.0.1:<tmpl_var name='fpm_port'>;
+</tmpl_if>
+<tmpl_if name='use_socket'>
+            fastcgi_pass unix:<tmpl_var name='fpm_socket'>;
+</tmpl_if>
+            fastcgi_index index.php;
+<tmpl_if name='php_fpm_chroot' op='==' value='y'>
+            fastcgi_param DOCUMENT_ROOT <tmpl_var name='php_fpm_chroot_web_folder'>;
+            fastcgi_param HOME <tmpl_var name='php_fpm_chroot_web_folder'>;
+            fastcgi_param SCRIPT_FILENAME <tmpl_var name='php_fpm_chroot_web_folder'>$fastcgi_script_name;
+<tmpl_else>
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+</tmpl_if>
+            #fastcgi_param PATH_INFO $fastcgi_script_name;
+            fastcgi_intercept_errors on;
+        }
+</tmpl_else>
+	<tmpl_if name='php' op='==' value='hhvm'>
+			location @php {
+				try_files $uri =404;
+				include /etc/nginx/fastcgi_params;
+				fastcgi_pass unix:/var/run/hhvm/hhvm.<tmpl_var name='system_user'>.sock;
+				fastcgi_index index.php;
+<tmpl_if name='php_fpm_chroot'>
+				fastcgi_param DOCUMENT_ROOT <tmpl_var name='php_fpm_chroot_web_folder'>;
+				fastcgi_param HOME <tmpl_var name='php_fpm_chroot_web_folder'>;
+				fastcgi_param SCRIPT_FILENAME <tmpl_var name='php_fpm_chroot_web_folder'>$fastcgi_script_name;
+<tmpl_else>
+				fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+</tmpl_if>
+				#fastcgi_param PATH_INFO $fastcgi_script_name;
+				fastcgi_intercept_errors on;
+				error_page 500 501 502 503 = @phpfallback;
+			}
+
+			location @phpfallback {
+				try_files $uri =404;
+				include /etc/nginx/fastcgi_params;
+<tmpl_if name='use_tcp'>
+				fastcgi_pass 127.0.0.1:<tmpl_var name='fpm_port'>;
+</tmpl_if>
+<tmpl_if name='use_socket'>
+				fastcgi_pass unix:<tmpl_var name='fpm_socket'>;
+</tmpl_if>
+				fastcgi_index index.php;
+<tmpl_if name='php_fpm_chroot'>
+				fastcgi_param DOCUMENT_ROOT <tmpl_var name='php_fpm_chroot_web_folder'>;
+				fastcgi_param HOME <tmpl_var name='php_fpm_chroot_web_folder'>;
+				fastcgi_param SCRIPT_FILENAME <tmpl_var name='php_fpm_chroot_web_folder'>$fastcgi_script_name;
+<tmpl_else>
+				fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+</tmpl_if>
+				#fastcgi_param PATH_INFO $fastcgi_script_name;
+				fastcgi_intercept_errors on;
+			}
+	</tmpl_else>
+
+        location @php {
+            deny all;
+        }
+	</tmpl_if>
+</tmpl_if>
+
+<tmpl_if name='cgi' op='==' value='y'>
+        location /cgi-bin/ {
+            try_files $uri =404;
+            include /etc/nginx/fastcgi_params;
+            root <tmpl_var name='document_root'>;
+            gzip off;
+            fastcgi_pass  unix:/var/run/fcgiwrap.socket;
+            fastcgi_index index.cgi;
+<tmpl_if name='php_fpm_chroot'>
+            fastcgi_param DOCUMENT_ROOT <tmpl_var name='php_fpm_chroot_web_folder'>;
+            fastcgi_param HOME <tmpl_var name='php_fpm_chroot_web_folder'>;
+            fastcgi_param SCRIPT_FILENAME <tmpl_var name='php_fpm_chroot_web_folder'>$fastcgi_script_name;
+<tmpl_else>
+            fastcgi_param SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+</tmpl_if>
+            fastcgi_intercept_errors on;
+        }
+</tmpl_if>
+
+<tmpl_loop name="rewrite_rules">
+        <tmpl_var name='rewrite_rule'>
+</tmpl_loop>
+
+<tmpl_loop name="nginx_directives">
+        <tmpl_var name='nginx_directive'>
+</tmpl_loop>
+
+<tmpl_if name='enable_pagespeed' op='==' value='y'>
+        pagespeed on;
+        pagespeed FileCachePath /var/ngx_pagespeed_cache;
+        <tmpl_if name='ssl_enabled'>pagespeed FetchHttps enable,allow_self_signed;</tmpl_if>
+
+
+        # let's speed up PageSpeed by storing it in the super duper fast memcached
+        pagespeed MemcachedThreads 1;
+        pagespeed MemcachedServers "localhost:11211";
+
+        # Filter settings
+        pagespeed RewriteLevel CoreFilters;
+        pagespeed EnableFilters collapse_whitespace,remove_comments;
+
+        #  Ensure requests for pagespeed optimized resources go to the pagespeed
+        #  handler and no extraneous headers get set.
+        location ~ "\.pagespeed\.([a-z]\.)?[a-z]{2}\.[^.]{10}\.[^.]+" {
+                add_header "" "";
+                access_log off;
+        }
+        location ~ "^/ngx_pagespeed_static/" {
+                access_log off;
+        }
+        location ~ "^/ngx_pagespeed_beacon$" {
+                access_log off;
+        }
+        location /ngx_pagespeed_statistics {
+                allow 127.0.0.1;
+                deny all;
+                access_log off;
+        }
+        location /ngx_pagespeed_global_statistics {
+                allow 127.0.0.1;
+                deny all;
+                access_log off;
+        }
+        location /ngx_pagespeed_message {
+                allow 127.0.0.1;
+                deny all;
+                access_log off;
+        }
+        location /pagespeed_console {
+                allow 127.0.0.1;
+                deny all;
+                access_log off;
+        }
+</tmpl_if>
+
+<tmpl_loop name="basic_auth_locations">
+        location <tmpl_var name='htpasswd_location'> { ##merge##
+                auth_basic "Members Only";
+                auth_basic_user_file <tmpl_var name='htpasswd_path'>.htpasswd;
+				
+                location ~ \.php$ {
+                    try_files <tmpl_var name='rnd_php_dummy_file'> @php;
+                }
+        }
+</tmpl_loop>
+</tmpl_if>	
+}
+
+<tmpl_loop name="redirects">
+server {
+        listen <tmpl_var name='ip_address'>:80;
+<tmpl_if name='ipv6_enabled'>
+        listen [<tmpl_var name='ipv6_address'>]:80;
+</tmpl_if>
+		
+<tmpl_if name='ssl_enabled'>
+        listen <tmpl_var name='ip_address'>:443 ssl;
+<tmpl_if name='ipv6_enabled'>
+        listen [<tmpl_var name='ipv6_address'>]:443 ssl;
+</tmpl_if>
+        ssl_certificate <tmpl_var name='ssl_crt_file'>;
+        ssl_certificate_key <tmpl_var name='ssl_key_file'>;
+</tmpl_if>
+        
+        server_name <tmpl_var name='rewrite_domain'>;
+
+<tmpl_if name='alias_seo_redirects2'>
+<tmpl_loop name="alias_seo_redirects2">
+        if ($http_host <tmpl_var name='alias_seo_redirect_operator'> "<tmpl_var name='alias_seo_redirect_origin_domain'>") {
+            rewrite ^ $scheme://<tmpl_var name='alias_seo_redirect_target_domain'>$request_uri? permanent;
+        }
+</tmpl_loop>
+</tmpl_if>
+		## no redirect for acme
+		location ^~ /.well-known/acme-challenge/ {
+			access_log off;
+			log_not_found off;
+			root /usr/local/ispconfig/interface/acme/;
+			autoindex off;
+			index index.html;
+			try_files $uri $uri/ =404;
+        }
+<tmpl_if name='use_rewrite'>
+		location / {
+			rewrite ^ <tmpl_var name='rewrite_target'>$request_uri? <tmpl_var name='rewrite_type'>;
+		}
+</tmpl_if>
+<tmpl_if name='use_proxy'>
+        location / {
+            proxy_pass <tmpl_var name='rewrite_target'>;
+            <tmpl_if name='rewrite_subdir'>rewrite ^/<tmpl_var name='rewrite_subdir'>(.*) /$1;</tmpl_if>
+<tmpl_loop name="proxy_directives">
+        <tmpl_var name='proxy_directive'>
+</tmpl_loop>
+        }
+</tmpl_if>
+}
+</tmpl_loop>
