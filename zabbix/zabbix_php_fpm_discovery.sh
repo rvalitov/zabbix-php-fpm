@@ -717,8 +717,9 @@ POOL_NAMES_LIST=$(${S_PRINTF} '%s\n' "${PS_LIST[@]}" | $S_AWK '{print $NF}' | $S
 
 #Update pending list with pools that are active and running
 while IFS= read -r POOL_NAME; do
-  AnalyzePool "$POOL_NAME"
+  AnalyzePool "$POOL_NAME" &
 done <<<"$POOL_NAMES_LIST"
+wait
 
 if [[ -n $DEBUG_MODE ]]; then
   PrintDebug "Pending list generated:"
