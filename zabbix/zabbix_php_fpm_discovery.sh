@@ -132,6 +132,12 @@ if [[ ! -d "$CACHE_ROOT" ]]; then
   exit 1
 fi
 
+USER_ID=$(id -u)
+if [[ $USER_ID -ne 0 ]]; then
+  echo "Insufficient privileges. This script must be run under 'root' user or with 'sudo'."
+  exit 1
+fi
+
 function createCacheDirectory() {
   if [[ ! -d "$CACHE_DIRECTORY" ]]; then
     mkdir "$CACHE_DIRECTORY"

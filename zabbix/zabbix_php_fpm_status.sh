@@ -16,6 +16,12 @@ if [[ ! -x $S_GREP ]]; then
   exit 1
 fi
 
+USER_ID=$(id -u)
+if [[ $USER_ID -ne 0 ]]; then
+  echo "Insufficient privileges. This script must be run under 'root' user or with 'sudo'."
+  exit 1
+fi
+
 if [[ -z $1 ]] || [[ -z $2 ]]; then
   echo "No input data specified"
   echo "Usage: $0 php-path status"
