@@ -562,6 +562,23 @@ testZabbixGetVersion() {
   printSuccess "${FUNCNAME[0]}"
 }
 
+testNonRootUserPrivilegesDiscovery() {
+  #Run the script under non root user
+  DATA=$(sudo -u zabbix "/etc/zabbix/zabbix_php_fpm_discovery.sh")
+  IS_OK=$(echo "$DATA" | grep -F 'Insufficient privileges')
+  assertNotNull "The discovery script must not work for non root user" "$IS_OK"
+  printSuccess "${FUNCNAME[0]}"
+}
+
+testNonRootUserPrivilegesStatus() {
+  #Run the script under non root user
+  assertNotNull "Test socket is not defined" "$TEST_SOCKET"
+  DATA=$(sudo -u zabbix "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
+  IS_OK=$(echo "$DATA" | grep -F 'Insufficient privileges')
+  assertNotNull "The status script must not work for non root user" "$IS_OK"
+  printSuccess "${FUNCNAME[0]}"
+}
+
 testPHPIsRunning() {
   IS_OK=$(sudo ps ax | grep -F "php-fpm: pool " | grep -F -v "grep" | head -n1)
   assertNotNull "No running PHP-FPM instances found" "$IS_OK"
