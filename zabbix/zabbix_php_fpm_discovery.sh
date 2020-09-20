@@ -136,6 +136,12 @@ if [[ ! -d "$CACHE_ROOT" ]]; then
   exit 1
 fi
 
+USER_ID=$(id -u)
+if [[ $USER_ID -ne 0 ]]; then
+  echo "Insufficient privileges. This script must be run under 'root' user or with 'sudo'."
+  exit 1
+fi
+
 function createCacheDirectory() {
   if [[ ! -d "$CACHE_DIRECTORY" ]]; then
     mkdir "$CACHE_DIRECTORY"
@@ -237,6 +243,7 @@ function UpdatePoolInCache() {
     local ITEM_POOL_TYPE
     # shellcheck disable=SC2016
     ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | ${S_AWK} '{print $3}')
+
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
       #Deleting the pool first
@@ -726,7 +733,6 @@ EOF
   ARG_ID=$((ARG_ID + 1))
   shift 1
 done
-
 PrintDebug "Current user is $ACTIVE_USER"
 PrintDebug "Status path to be used: $STATUS_PATH"
 
@@ -789,6 +795,7 @@ PrintDebug "Processing pools"
 PARALLEL_TASKS=0
 TASK_LIST=()
 LAST_PENDING_ITEM=${PENDING_LIST[${#PENDING_LIST[@]} - 1]}
+
 for POOL_ITEM in "${PENDING_LIST[@]}"; do
   # shellcheck disable=SC2016
   POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK '{print $1}')
