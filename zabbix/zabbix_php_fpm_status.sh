@@ -7,7 +7,7 @@ S_FCGI=$(type -P cgi-fcgi)
 S_GREP=$(type -P grep)
 
 if [[ ! -x $S_FCGI ]]; then
-  echo "Utility 'cgi-fcgi' not found. Please, install it first."
+  echo "Utility 'cgi-fcgi' not found. Please, install it first. The required package's name depends on your OS type and version and can be 'libfcgi-bin' or 'libfcgi0ldbl' or 'fcgi'."
   exit 1
 fi
 
