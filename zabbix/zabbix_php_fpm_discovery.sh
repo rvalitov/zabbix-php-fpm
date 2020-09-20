@@ -11,6 +11,7 @@
 # After this duration is reached, the script will stop running and save its state.
 # So, the actual execution time will be slightly more than this parameter.
 # We put value equivalent to 1.5 seconds here.
+# Allowed minimum value is 1 second, maximum value is 30 seconds (defined by Zabbix).
 MAX_EXECUTION_TIME="1500"
 
 #Status path used in calls to PHP-FPM
@@ -33,6 +34,9 @@ CACHE_DIR_NAME="zabbix-php-fpm"
 
 #Full path to directory to store cache files
 CACHE_DIRECTORY="$CACHE_ROOT/$CACHE_DIR_NAME"
+
+#Maximum number of tasks allowed to be run in parallel
+MAX_PARALLEL_TASKS=10
 
 #Checking all the required executables
 S_PS=$(type -P ps)
@@ -436,7 +440,10 @@ function CheckExecutionTime() {
 # Pass two arguments: pool name and pool socket
 # Function returns:
 # 0 if the pool is invalid
-# 1 if the pool is OK
+# 1 if the pool is OK and process manager is dynamic
+# 2 if the pool is OK and process manager is static
+# 3 if the pool is OK and process manager is ondemand
+# 4 if the pool is OK and process manager is unknown
 function CheckPool() {
   local POOL_NAME=$1
   local POOL_SOCKET=$2
@@ -460,8 +467,16 @@ function CheckPool() {
       PROCESS_MANAGER=$(echo "$STATUS_JSON" | $S_GREP -oP '"process manager":"\K([a-z]+)')
       if [[ -n $PROCESS_MANAGER ]]; then
         PrintDebug "Detected pool's process manager is $PROCESS_MANAGER"
-        UpdatePoolInCache "$POOL_NAME" "$POOL_SOCKET" "$PROCESS_MANAGER"
-        return 1
+        if [[ $PROCESS_MANAGER == "dynamic" ]]; then
+          return 1
+        elif [[ $PROCESS_MANAGER == "static" ]]; then
+          return 2
+        elif [[ $PROCESS_MANAGER == "ondemand" ]]; then
+          return 3
+        else
+          PrintDebug "Error: process manager is unknown"
+          return 4
+        fi
       else
         PrintDebug "Error: Failed to detect process manager of the pool"
       fi
@@ -630,7 +645,13 @@ function PrintCacheList() {
   done
 }
 
-# Functions processes a pool by name: makes all required checks and adds it to cache, etc.
+# Function processes a pool by name: makes all required checks and adds it to cache, etc.
+# Function returns:
+# 0 if the pool is invalid
+# 1 if the pool is OK and process manager is dynamic
+# 2 if the pool is OK and process manager is static
+# 3 if the pool is OK and process manager is ondemand
+# 4 if the pool is OK and process manager is unknown
 function ProcessPool() {
   local POOL_NAME=$1
   local POOL_SOCKET=$2
@@ -647,28 +668,65 @@ function ProcessPool() {
   else
     PrintDebug "Error: socket $POOL_SOCKET didn't return valid data"
   fi
-
-  DeletePoolFromPendingList "$POOL_NAME" "$POOL_SOCKET"
-  return 1
+  return $POOL_STATUS
 }
 
-for ARG in "$@"; do
-  if [[ ${ARG} == "debug" ]]; then
+ARG_ID=1
+ARGS_COUNT=$#
+while [ $ARG_ID -le $ARGS_COUNT ]; do
+  ARG=$1
+  if [[ $ARG == "debug" ]]; then
     DEBUG_MODE="1"
     echo "Debug mode enabled"
-  elif [[ ${ARG} == "sleep" ]]; then
+  elif [[ $ARG == "sleep" ]]; then
     USE_SLEEP_TIMEOUT="1"
     echo "Debug: Sleep timeout enabled"
-  elif [[ ${ARG} == "nosleep" ]]; then
+  elif [[ $ARG == "max_tasks" ]]; then
+    ARG_ID=$((ARG_ID + 1))
+    shift 1
+    ARG=$1
+    if [[ $ARG -ge 1 ]]; then
+      MAX_PARALLEL_TASKS=$1
+    fi
+    echo "Debug: argument 'max_tasks' = '$ARG' detected, the resulting parameter is set to $MAX_PARALLEL_TASKS"
+  elif [[ $ARG == "max_time" ]]; then
+    ARG_ID=$((ARG_ID + 1))
+    shift 1
+    ARG=$1
+    if [[ $ARG -ge 1 ]]; then
+      MAX_EXECUTION_TIME=$1
+    fi
+    echo "Debug: argument 'max_time' = '$ARG' detected, the resulting parameter is set to $MAX_EXECUTION_TIME"
+  elif [[ $ARG == "nosleep" ]]; then
     MAX_EXECUTION_TIME="10000000"
     echo "Debug: Timeout checks disabled"
-  elif [[ ${ARG} == /* ]]; then
-    STATUS_PATH=${ARG}
+  elif [[ $ARG == "?" ]] || [[ $ARG == "help" ]] || [[ $ARG == "/?" ]]; then
+    $S_CAT <<EOF
+NAME: discovery script for zabbix-php-fpm
+USAGE: $0 [ARGUMENTS...]
+ARGUMENTS:
+  debug - to display verbose output on screen
+  nosleep - to disable timeout checks, used for testing only
+  sleep - to enable forced timeouts between operations, used for testing only
+  max_tasks <VALUE> - sets maximum number of allowed parallel tasks to VALUE (must be >=1)
+  max_time <VALUE> - sets maximum execution time in ms of the script to VALUE (1000<=VALUE<=30000)
+  <STATUS_PATH> - sets status path used for PHP-FPM. The path should begin with slash symbol '/'. Default value is '/php-fpm-status'.
+  ? or help or /? - display current information
+AUTHOR: Ramil Valitov ramilvalitov@gmail.com
+PROJECT PAGE: https://github.com/rvalitov/zabbix-php-fpm
+WIKI & DOCS: https://github.com/rvalitov/zabbix-php-fpm/wiki
+EOF
+    exit 1
+  elif [[ $ARG == /* ]]; then
+    STATUS_PATH=$ARG
     PrintDebug "Argument $ARG is interpreted as status path"
   else
     PrintDebug "Argument $ARG is unknown and skipped"
   fi
+  ARG_ID=$((ARG_ID + 1))
+  shift 1
 done
+
 PrintDebug "Current user is $ACTIVE_USER"
 PrintDebug "Status path to be used: $STATUS_PATH"
 
@@ -717,9 +775,8 @@ POOL_NAMES_LIST=$(${S_PRINTF} '%s\n' "${PS_LIST[@]}" | $S_AWK '{print $NF}' | $S
 
 #Update pending list with pools that are active and running
 while IFS= read -r POOL_NAME; do
-  AnalyzePool "$POOL_NAME" &
+  AnalyzePool "$POOL_NAME"
 done <<<"$POOL_NAMES_LIST"
-wait
 
 if [[ -n $DEBUG_MODE ]]; then
   PrintDebug "Pending list generated:"
@@ -729,13 +786,57 @@ fi
 #Process pending list
 PrintDebug "Processing pools"
 
+PARALLEL_TASKS=0
+TASK_LIST=()
+LAST_PENDING_ITEM=${PENDING_LIST[${#PENDING_LIST[@]} - 1]}
 for POOL_ITEM in "${PENDING_LIST[@]}"; do
   # shellcheck disable=SC2016
   POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK '{print $1}')
   # shellcheck disable=SC2016
   POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK '{print $2}')
   if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]]; then
-    ProcessPool "$POOL_NAME" "$POOL_SOCKET"
+    PARALLEL_TASKS=$((PARALLEL_TASKS + 1))
+    if [[ $PARALLEL_TASKS -le $MAX_PARALLEL_TASKS ]]; then
+      PrintDebug "Starting processing task for pool $POOL_NAME $POOL_SOCKET, subprocess #$PARALLEL_TASKS..."
+      ProcessPool "$POOL_NAME" "$POOL_SOCKET" &
+      TASK_PID=$!
+      TASK_LIST+=("$POOL_NAME;$POOL_SOCKET;$TASK_PID")
+    fi
+
+    if [[ $PARALLEL_TASKS -gt $MAX_PARALLEL_TASKS ]] || [[ $LAST_PENDING_ITEM == "$POOL_ITEM" ]]; then
+      #Wait till all tasks complete
+      if [[ $PARALLEL_TASKS -gt $MAX_PARALLEL_TASKS ]]; then
+        PrintDebug "Max number of parallel tasks reached ($MAX_PARALLEL_TASKS), waiting till they finish..."
+      else
+        PrintDebug "No more parallel tasks to start, waiting for running tasks to finish..."
+      fi
+      for TASK_LINE in "${TASK_LIST[@]}"; do
+        # shellcheck disable=SC2016
+        POOL_NAME=$(echo "$TASK_LINE" | $S_AWK -F ";" '{print $1}')
+        # shellcheck disable=SC2016
+        POOL_SOCKET=$(echo "$TASK_LINE" | $S_AWK -F ";" '{print $2}')
+        # shellcheck disable=SC2016
+        TASK_PID=$(echo "$TASK_LINE" | $S_AWK -F ";" '{print $3}')
+        wait $TASK_PID
+        EXIT_CODE=$?
+        PrintDebug "Finished parallel task PID $TASK_PID for pool \"$POOL_NAME\" at $POOL_SOCKET"
+        DeletePoolFromPendingList "$POOL_NAME" "$POOL_SOCKET"
+
+        if [[ $EXIT_CODE -ge 1 ]] && [[ $EXIT_CODE -le 3 ]]; then
+          if [[ $EXIT_CODE -eq 1 ]]; then
+            PROCESS_MANAGER="dynamic"
+          elif [[ $EXIT_CODE -eq 2 ]]; then
+            PROCESS_MANAGER="static"
+          else
+            PROCESS_MANAGER="ondemand"
+          fi
+          UpdatePoolInCache "$POOL_NAME" "$POOL_SOCKET" "$PROCESS_MANAGER"
+        fi
+      done
+      PrintDebug "All previously started parallel tasks are complete"
+      PARALLEL_TASKS=0
+      TASK_LIST=()
+    fi
 
     #Confirm that we run not too much time
     CheckExecutionTime
