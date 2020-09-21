@@ -59,6 +59,9 @@ CACHE_DIR_NAME="zabbix-php-fpm"
 #Full path to directory to store cache files
 CACHE_DIRECTORY="$CACHE_ROOT/$CACHE_DIR_NAME"
 
+#Status path used in calls to PHP-FPM
+STATUS_PATH="/php-fpm-status"
+
 # ----------------------------------
 # Colors
 # ----------------------------------
@@ -256,7 +259,7 @@ copyPool() {
   sudo cp "$ORIGINAL_FILE" "$NEW_POOL_FILE"
 
   #Add status path
-  sudo sed -i 's#;pm.status_path.*#pm.status_path = /php-fpm-status#' "$NEW_POOL_FILE"
+  sudo sed -i "s#;pm.status_path.*#pm.status_path = $STATUS_PATH#" "$NEW_POOL_FILE"
   #Set pool manager
   sudo sed -i "s#pm = dynamic#pm = $POOL_TYPE#" "$NEW_POOL_FILE"
   #Socket
@@ -453,7 +456,7 @@ function startOndemandPoolsCache() {
   assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
   # We must start all the pools
-  local POOL_URL="/php-fpm-status"
+  local POOL_URL="$STATUS_PATH"
 
   local PHP_LIST
   local POOL_DIR
@@ -638,7 +641,7 @@ testNonRootUserPrivilegesStatus() {
 
   #Run the script under non root user
   assertNotNull "Test socket is not defined" "$TEST_SOCKET"
-  DATA=$(sudo -u zabbix "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
+  DATA=$(sudo -u zabbix "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "$STATUS_PATH")
   IS_OK=$(echo "$DATA" | grep -F 'Insufficient privileges')
   printElapsedTime
   assertNotNull "The status script must not work for non root user" "$IS_OK"
@@ -658,7 +661,7 @@ testStatusScriptSocket() {
   local IS_OK
 
   assertNotNull "Test socket is not defined" "$TEST_SOCKET"
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "$STATUS_PATH")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
   assertNotNull "Failed to get status from pool $TEST_SOCKET: $DATA" "$IS_OK"
@@ -676,7 +679,7 @@ testStatusScriptPort() {
   local PHP_POOL="127.0.0.1:$PHP_PORT"
 
   #Make the test:
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "$STATUS_PATH")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
@@ -690,7 +693,7 @@ testZabbixStatusSocket() {
   local IS_OK
 
   # shellcheck disable=SC2140
-  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$TEST_SOCKET","/php-fpm-status"])
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$TEST_SOCKET","$STATUS_PATH"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
@@ -708,7 +711,7 @@ testZabbixStatusPort() {
   local PHP_POOL="127.0.0.1:$PHP_PORT"
 
   # shellcheck disable=SC2140
-  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","$STATUS_PATH"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
@@ -721,7 +724,7 @@ testDiscoverScriptReturnsData() {
   local DATA
   local IS_OK
 
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "$STATUS_PATH")
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
@@ -732,7 +735,7 @@ testDiscoverScriptReturnsData() {
 testDiscoverScriptDebug() {
   local DATA
   local NUMBER_OF_ERRORS
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "nosleep" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "nosleep" "$STATUS_PATH")
   NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
 
   if [[ $NUMBER_OF_ERRORS -gt 0 ]]; then
@@ -753,7 +756,7 @@ testDiscoverScriptDebug() {
 testDiscoverScriptTimeout() {
   local DATA
   local NUMBER_OF_ERRORS
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "max_tasks" "1" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "max_tasks" "1" "$STATUS_PATH")
   NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
 
   if [[ $NUMBER_OF_ERRORS -gt 0 ]]; then
@@ -778,9 +781,9 @@ function runZabbixDiscoverReturnsData() {
 
   if [[ $ARG == "sleep" ]]; then
     # shellcheck disable=SC2140
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","/php-fpm-status"])
+    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","max_tasks","1","$STATUS_PATH"])
   else
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["$STATUS_PATH"])
   fi
 
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
@@ -799,7 +802,7 @@ testDiscoverScriptSleep() {
   local CHECK_OK_COUNT
   local STOP_OK_COUNT
 
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "$STATUS_PATH")
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
 
@@ -829,7 +832,7 @@ testDiscoverScriptRunDuration() {
   local CHECK_OK_COUNT
   local STOP_OK_COUNT
 
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "$STATUS_PATH")
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
 
@@ -851,8 +854,8 @@ testDiscoverScriptDoubleRun() {
   local DATA_FIRST
   local DATA_SECOND
 
-  DATA_FIRST=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
-  DATA_SECOND=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
+  DATA_FIRST=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "$STATUS_PATH")
+  DATA_SECOND=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "$STATUS_PATH")
 
   printElapsedTime
   assertNotEquals "Multiple discovery routines provide the same results: $DATA_FIRST" "$DATA_FIRST" "$DATA_SECOND"
@@ -864,9 +867,9 @@ testZabbixDiscoverDoubleRun() {
   local DATA_SECOND
 
   # shellcheck disable=SC2140
-  DATA_FIRST=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","/php-fpm-status"])
+  DATA_FIRST=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","$STATUS_PATH"])
   # shellcheck disable=SC2140
-  DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","/php-fpm-status"])
+  DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","$STATUS_PATH"])
 
   printElapsedTime
   assertNotEquals "Multiple discovery routines provide the same results: $DATA_FIRST" "$DATA_FIRST" "$DATA_SECOND"
@@ -882,7 +885,7 @@ function discoverAllZabbix() {
     DATA_COUNT=0
   fi
 
-  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["$STATUS_PATH"])
   if [[ -n "$DATA" ]] && [[ -n "$DATA_OLD" ]] && [[ "$DATA_OLD" == "$DATA" ]]; then
     echo "$DATA"
     return 0
