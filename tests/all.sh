@@ -133,17 +133,6 @@ function restoreUserParameters() {
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d 2>/dev/null | sort | head -n1)"
 }
 
-function AddSleepToConfig() {
-  local PARAMS_FILE
-  PARAMS_FILE=$(getUserParameters)
-  sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
-  travis_fold_start "AddSleepToConfig" "ⓘ New UserParameter file"
-  sudo cat "$PARAMS_FILE"
-  travis_fold_end
-  restartService "zabbix-agent"
-  sleep 2
-}
-
 function StartTimer() {
   START_TIME=$(date +%s%N)
 }
@@ -500,7 +489,7 @@ getAnySocket() {
   assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
   assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
-local PHP_RUN_DIR
+  local PHP_RUN_DIR
   PHP_RUN_DIR=$(getRunPHPDirectory)
   EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
@@ -700,6 +689,7 @@ testZabbixStatusSocket() {
   local DATA
   local IS_OK
 
+  # shellcheck disable=SC2140
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$TEST_SOCKET","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
@@ -717,6 +707,7 @@ testZabbixStatusPort() {
   PHP_PORT=$(getAnyPort)
   local PHP_POOL="127.0.0.1:$PHP_PORT"
 
+  # shellcheck disable=SC2140
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
@@ -783,7 +774,16 @@ testDiscoverScriptTimeout() {
 function runZabbixDiscoverReturnsData() {
   local DATA
   local IS_OK
-  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  local OPTIONS='"/php-fpm-status"'
+
+  local ARG_ID=1
+  local ARGS_COUNT=$#
+
+  while [ $ARG_ID -le $ARGS_COUNT ]; do
+    OPTIONS="$OPTIONS,\"$1\""
+  done
+
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover[$OPTIONS])
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
@@ -820,11 +820,8 @@ testDiscoverScriptSleep() {
 }
 
 testZabbixDiscoverSleep() {
-  #Add sleep
-  AddSleepToConfig
-
   StartTimer
-  testZabbixDiscoverReturnsData
+  runZabbixDiscoverReturnsData "sleep"
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -846,11 +843,8 @@ testDiscoverScriptRunDuration() {
 }
 
 testZabbixDiscoverRunDuration() {
-  #Add sleep
-  AddSleepToConfig
-
   StartTimer
-  runZabbixDiscoverReturnsData
+  runZabbixDiscoverReturnsData "sleep"
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -870,11 +864,10 @@ testZabbixDiscoverDoubleRun() {
   local DATA_FIRST
   local DATA_SECOND
 
-  #Add sleep
-  AddSleepToConfig
-
-  DATA_FIRST=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  # shellcheck disable=SC2140
+  DATA_FIRST=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","/php-fpm-status"])
+  # shellcheck disable=SC2140
+  DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","/php-fpm-status"])
 
   printElapsedTime
   assertNotEquals "Multiple discovery routines provide the same results: $DATA_FIRST" "$DATA_FIRST" "$DATA_SECOND"
@@ -923,9 +916,9 @@ checkNumberOfPools() {
   fi
   assertEquals "Failed to discover all data when checking pools '$POOL_TYPE'" "0" "$STATUS"
 
-local NUMBER_OF_POOLS
-local PHP_COUNT
-local POOLS_BY_DESIGN
+  local NUMBER_OF_POOLS
+  local PHP_COUNT
+  local POOLS_BY_DESIGN
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F "{\"{#POOLNAME}\":\"$POOL_TYPE" | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
   if [[ -n "$CHECK_COUNT" ]] && [[ "$CHECK_COUNT" -ge 0 ]]; then
@@ -990,7 +983,7 @@ testZabbixDiscoverNumberOfOndemandPoolsCache() {
   echo "$INITIAL_DATA"
   travis_fold_end
 
-local WAIT_TIMEOUT
+  local WAIT_TIMEOUT
   WAIT_TIMEOUT=$(echo "$ONDEMAND_TIMEOUT * 2" | bc)
   sleep "$WAIT_TIMEOUT"
 

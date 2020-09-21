@@ -198,7 +198,7 @@ function PrintDebug() {
 
 function getPoolManagerByCode() {
   local MANAGER_CODE=$1
-  local $PROCESS_MANAGER
+  local PROCESS_MANAGER
 
   if [[ $MANAGER_CODE -eq 1 ]]; then
     PROCESS_MANAGER="dynamic"
@@ -696,7 +696,7 @@ function ProcessPool() {
   if [[ $POOL_STATUS -gt 0 ]]; then
     PrintDebug "Success: socket $POOL_SOCKET returned valid status data"
   else
-    PrintDebug "Error: socket $POOL_SOCKET didn't return valid data"
+    PrintDebug "Warning: socket $POOL_SOCKET didn't return valid data"
   fi
   return $POOL_STATUS
 }

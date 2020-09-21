@@ -102,7 +102,7 @@ testMissingPackagesDiscoveryScript() {
 testMissingPackagesStatusScript() {
   local DATA
   local IS_OK
-  
+
   DATA=$(sudo bash "/etc/zabbix/zabbix_php_fpm_status.sh" "localhost:9000" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F ' not found.')
   assertNotNull "Status script didn't report error on missing utilities $DATA" "$IS_OK"
