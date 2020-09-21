@@ -155,6 +155,8 @@ function printElapsedTime() {
 }
 
 function assertExecutionTime() {
+  local MAX_TIME
+  MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
   assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
 }
 
@@ -739,7 +741,6 @@ testDiscoverScriptRunDuration() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
-  MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
   printElapsedTime
   printYellow "Success time checks: $CHECK_OK_COUNT"
@@ -754,7 +755,6 @@ testZabbixDiscoverRunDuration() {
   AddSleepToConfig
 
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
   printElapsedTime
   assertExecutionTime
