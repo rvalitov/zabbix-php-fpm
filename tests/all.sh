@@ -753,11 +753,10 @@ testDiscoverScriptDebug() {
 testDiscoverScriptTimeout() {
   local DATA
   local NUMBER_OF_ERRORS
-  local PHP_COUNT
-  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "nosleep" "max_tasks" "1" "/php-fpm-status")
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "max_tasks" "1" "/php-fpm-status")
   NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
-  PHP_COUNT=$(getNumberOfPHPVersions)
-  if [[ $PHP_COUNT != "$NUMBER_OF_ERRORS" ]]; then
+
+  if [[ $NUMBER_OF_ERRORS -gt 0 ]]; then
     local ERRORS_LIST
     ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
     printYellow "Errors list:"
@@ -767,7 +766,8 @@ testDiscoverScriptTimeout() {
     travis_fold_end
   fi
   printElapsedTime
-  assertEquals "Discover script errors mismatch" "$PHP_COUNT" "$NUMBER_OF_ERRORS"
+  assertEquals "Discover script errors mismatch" "0" "$NUMBER_OF_ERRORS"
+  assertExecutionTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -776,9 +776,9 @@ function runZabbixDiscoverReturnsData() {
   local IS_OK
   local ARG=$1
 
-  if [[ -n $ARG ]]; then
+  if [[ $ARG == "sleep" ]]; then
     # shellcheck disable=SC2140
-    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["$ARG","/php-fpm-status"])
+    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["sleep","/php-fpm-status"])
   else
     DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   fi
