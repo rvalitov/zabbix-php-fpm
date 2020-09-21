@@ -148,7 +148,6 @@ function StartTimer() {
 
 function printElapsedTime() {
   local END_TIME
-  ELAPSED_TIME
 
   END_TIME=$(date +%s%N)
   ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
