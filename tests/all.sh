@@ -134,7 +134,7 @@ function restoreUserParameters() {
 
 function AddSleepToConfig() {
   PARAMS_FILE=$(getUserParameters)
-  sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
+  sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep max_tasks 1 $1#' "$PARAMS_FILE"
   travis_fold_start "AddSleepToConfig" "ⓘ New UserParameter file"
   sudo cat "$PARAMS_FILE"
   travis_fold_end
@@ -733,6 +733,7 @@ testZabbixDiscoverSleep() {
   #Add sleep
   AddSleepToConfig
 
+  StartTimer
   testZabbixDiscoverReturnsData
   printSuccess "${FUNCNAME[0]}"
 }
@@ -746,17 +747,6 @@ testDiscoverScriptRunDuration() {
   printYellow "Success time checks: $CHECK_OK_COUNT"
   printYellow "Stop time checks: $STOP_OK_COUNT"
 
-  assertExecutionTime
-  printSuccess "${FUNCNAME[0]}"
-}
-
-testZabbixDiscoverRunDuration() {
-  #Add sleep
-  AddSleepToConfig
-
-  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-
-  printElapsedTime
   assertExecutionTime
   printSuccess "${FUNCNAME[0]}"
 }

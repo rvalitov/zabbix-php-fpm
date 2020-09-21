@@ -196,6 +196,22 @@ function PrintDebug() {
   fi
 }
 
+function getPoolManagerByCode() {
+  local MANAGER_CODE=$1
+  local $PROCESS_MANAGER
+
+  if [[ $MANAGER_CODE -eq 1 ]]; then
+    PROCESS_MANAGER="dynamic"
+  elif [[ $MANAGER_CODE -eq 2 ]]; then
+    PROCESS_MANAGER="static"
+  elif [[ $MANAGER_CODE -eq 3 ]]; then
+    PROCESS_MANAGER="ondemand"
+  else
+    PROCESS_MANAGER=""
+  fi
+  echo $PROCESS_MANAGER
+}
+
 # Encodes input data to JSON and saves it to result string
 # Input arguments:
 # - pool name
@@ -812,47 +828,55 @@ for POOL_ITEM in "${PENDING_LIST[@]}"; do
   # shellcheck disable=SC2016
   POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
   if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]]; then
-    PARALLEL_TASKS=$((PARALLEL_TASKS + 1))
-    if [[ $PARALLEL_TASKS -le $MAX_PARALLEL_TASKS ]]; then
-      PrintDebug "Starting processing task for pool $POOL_NAME $POOL_SOCKET, subprocess #$PARALLEL_TASKS..."
-      ProcessPool "$POOL_NAME" "$POOL_SOCKET" &
-      TASK_PID=$!
-      TASK_LIST+=("$POOL_NAME$ARRAY_SEPARATOR$POOL_SOCKET$ARRAY_SEPARATOR$TASK_PID")
-    fi
+    if [[ $MAX_PARALLEL_TASKS -eq 1 ]]; then
+      #We work in standard mode (non-parallel)
+      ProcessPool "$POOL_NAME" "$POOL_SOCKET"
+      EXIT_CODE=$?
+      DeletePoolFromPendingList "$POOL_NAME" "$POOL_SOCKET"
 
-    if [[ $PARALLEL_TASKS -gt $MAX_PARALLEL_TASKS ]] || [[ $LAST_PENDING_ITEM == "$POOL_ITEM" ]]; then
-      #Wait till all tasks complete
-      if [[ $PARALLEL_TASKS -gt $MAX_PARALLEL_TASKS ]]; then
-        PrintDebug "Max number of parallel tasks reached ($MAX_PARALLEL_TASKS), waiting till they finish..."
-      else
-        PrintDebug "No more parallel tasks to start, waiting for running tasks to finish..."
+      PROCESS_MANAGER=$(getPoolManagerByCode $EXIT_CODE)
+      if [[ -n $PROCESS_MANAGER ]]; then
+        UpdatePoolInCache "$POOL_NAME" "$POOL_SOCKET" "$PROCESS_MANAGER"
       fi
-      for TASK_LINE in "${TASK_LIST[@]}"; do
-        # shellcheck disable=SC2016
-        POOL_NAME=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
-        # shellcheck disable=SC2016
-        POOL_SOCKET=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
-        # shellcheck disable=SC2016
-        TASK_PID=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $3}')
-        wait $TASK_PID
-        EXIT_CODE=$?
-        PrintDebug "Finished parallel task PID $TASK_PID for pool \"$POOL_NAME\" at $POOL_SOCKET"
-        DeletePoolFromPendingList "$POOL_NAME" "$POOL_SOCKET"
+    else
+      #We work in parallel mode
+      PARALLEL_TASKS=$((PARALLEL_TASKS + 1))
+      if [[ $PARALLEL_TASKS -le $MAX_PARALLEL_TASKS ]]; then
+        PrintDebug "Starting processing task for pool $POOL_NAME $POOL_SOCKET, subprocess #$PARALLEL_TASKS..."
+        ProcessPool "$POOL_NAME" "$POOL_SOCKET" &
+        TASK_PID=$!
+        TASK_LIST+=("$POOL_NAME$ARRAY_SEPARATOR$POOL_SOCKET$ARRAY_SEPARATOR$TASK_PID")
+      fi
 
-        if [[ $EXIT_CODE -ge 1 ]] && [[ $EXIT_CODE -le 3 ]]; then
-          if [[ $EXIT_CODE -eq 1 ]]; then
-            PROCESS_MANAGER="dynamic"
-          elif [[ $EXIT_CODE -eq 2 ]]; then
-            PROCESS_MANAGER="static"
-          else
-            PROCESS_MANAGER="ondemand"
-          fi
-          UpdatePoolInCache "$POOL_NAME" "$POOL_SOCKET" "$PROCESS_MANAGER"
+      if [[ $PARALLEL_TASKS -gt $MAX_PARALLEL_TASKS ]] || [[ $LAST_PENDING_ITEM == "$POOL_ITEM" ]]; then
+        #Wait till all tasks complete
+        if [[ $PARALLEL_TASKS -gt $MAX_PARALLEL_TASKS ]]; then
+          PrintDebug "Max number of parallel tasks reached ($MAX_PARALLEL_TASKS), waiting till they finish..."
+        else
+          PrintDebug "No more parallel tasks to start, waiting for running tasks to finish..."
         fi
-      done
-      PrintDebug "All previously started parallel tasks are complete"
-      PARALLEL_TASKS=0
-      TASK_LIST=()
+        for TASK_LINE in "${TASK_LIST[@]}"; do
+          # shellcheck disable=SC2016
+          POOL_NAME=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
+          # shellcheck disable=SC2016
+          POOL_SOCKET=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
+          # shellcheck disable=SC2016
+          TASK_PID=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $3}')
+          wait $TASK_PID
+          EXIT_CODE=$?
+          PrintDebug "Finished parallel task PID $TASK_PID for pool \"$POOL_NAME\" at $POOL_SOCKET"
+          DeletePoolFromPendingList "$POOL_NAME" "$POOL_SOCKET"
+
+          PROCESS_MANAGER=$(getPoolManagerByCode $EXIT_CODE)
+          if [[ -n $PROCESS_MANAGER ]]; then
+            UpdatePoolInCache "$POOL_NAME" "$POOL_SOCKET" "$PROCESS_MANAGER"
+          fi
+        done
+        PrintDebug "All previously started parallel tasks are complete"
+        PARALLEL_TASKS=0
+        TASK_LIST=()
+      fi
+      #End of parallel mode
     fi
 
     #Confirm that we run not too much time
