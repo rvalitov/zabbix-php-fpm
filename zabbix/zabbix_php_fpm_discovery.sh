@@ -38,6 +38,13 @@ CACHE_DIRECTORY="$CACHE_ROOT/$CACHE_DIR_NAME"
 #Maximum number of tasks allowed to be run in parallel
 MAX_PARALLEL_TASKS=10
 
+# Separator that is used internally in array.
+# This is only a single character that should not be distinct and not in a list of characters allowed in:
+# PHP-FPM pool name
+# domain name
+# IP address, port, and colon (:)
+ARRAY_SEPARATOR=";"
+
 #Checking all the required executables
 S_PS=$(type -P ps)
 S_GREP=$(type -P grep)
@@ -234,15 +241,15 @@ function UpdatePoolInCache() {
 
     local ITEM_NAME
     # shellcheck disable=SC2016
-    ITEM_NAME=$(echo "$CACHE_ITEM" | $S_AWK -F ";" '{print $1}')
+    ITEM_NAME=$(echo "$CACHE_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
 
     local ITEM_SOCKET
     # shellcheck disable=SC2016
-    ITEM_SOCKET=$(echo "$CACHE_ITEM" | $S_AWK -F ";" '{print $2}')
+    ITEM_SOCKET=$(echo "$CACHE_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
 
     local ITEM_POOL_TYPE
     # shellcheck disable=SC2016
-    ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | $S_AWK -F ";" '{print $3}')
+    ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $3}')
 
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
@@ -257,7 +264,7 @@ function UpdatePoolInCache() {
     CACHE=("${CACHE[@]}")
   fi
 
-  CACHE+=("$POOL_NAME;$POOL_SOCKET;$POOL_TYPE")
+  CACHE+=("$POOL_NAME$ARRAY_SEPARATOR$POOL_SOCKET$ARRAY_SEPARATOR$POOL_TYPE")
   PrintDebug "Added pool $POOL_NAME $POOL_SOCKET to cache list"
   return 0
 }
@@ -271,15 +278,15 @@ function UpdateCacheList() {
 
     local ITEM_NAME
     # shellcheck disable=SC2016
-    ITEM_NAME=$(echo "$CACHE_ITEM" | $S_AWK -F ";" '{print $1}')
+    ITEM_NAME=$(echo "$CACHE_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
 
     local ITEM_SOCKET
     # shellcheck disable=SC2016
-    ITEM_SOCKET=$(echo "$CACHE_ITEM" | $S_AWK -F ";" '{print $2}')
+    ITEM_SOCKET=$(echo "$CACHE_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
 
     local ITEM_POOL_TYPE
     # shellcheck disable=SC2016
-    ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | $S_AWK -F ";" '{print $3}')
+    ITEM_POOL_TYPE=$(echo "$CACHE_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $3}')
 
     if [[ $ITEM_NAME == "$POOL_NAME" && $ITEM_SOCKET == "$POOL_SOCKET" ]] || [[ -z $ITEM_POOL_TYPE ]]; then
       PrintDebug "Pool $POOL_NAME $POOL_SOCKET is in cache, deleting..."
@@ -337,7 +344,7 @@ function AddPoolToPendingList() {
   fi
 
   #Otherwise add this pool to the end of the list
-  PENDING_LIST+=("$POOL_NAME;$POOL_SOCKET")
+  PENDING_LIST+=("$POOL_NAME$ARRAY_SEPARATOR$POOL_SOCKET")
   PrintDebug "Added pool $POOL_NAME $POOL_SOCKET to pending list"
   return 1
 }
@@ -356,7 +363,7 @@ function DeletePoolFromPendingList() {
 
   for ITEM_INDEX in "${!PENDING_LIST[@]}"; do
     local PENDING_ITEM="${PENDING_LIST[$ITEM_INDEX]}"
-    if [[ "$PENDING_ITEM" == "$POOL_NAME $POOL_SOCKET" ]]; then
+    if [[ "$PENDING_ITEM" == "$POOL_NAME$ARRAY_SEPARATOR$POOL_SOCKET" ]]; then
       unset "PENDING_LIST[$ITEM_INDEX]"
       UNSET_USED="1"
     fi
@@ -410,11 +417,11 @@ function SavePrintResults() {
   for CACHE_ITEM in "${CACHE[@]}"; do
     local ITEM_NAME
     # shellcheck disable=SC2016
-    ITEM_NAME=$(echo "$CACHE_ITEM" | $S_AWK -F ";" '{print $1}')
+    ITEM_NAME=$(echo "$CACHE_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
 
     local ITEM_SOCKET
     # shellcheck disable=SC2016
-    ITEM_SOCKET=$(echo "$CACHE_ITEM" | $S_AWK -F ";" '{print $2}')
+    ITEM_SOCKET=$(echo "$CACHE_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
     EncodeToJson "$ITEM_NAME" "$ITEM_SOCKET"
   done
 
@@ -621,10 +628,10 @@ function PrintPendingList() {
   for POOL_ITEM in "${PENDING_LIST[@]}"; do
     local POOL_NAME
     # shellcheck disable=SC2016
-    POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK -F ";" '{print $1}')
+    POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
     local POOL_SOCKET
     # shellcheck disable=SC2016
-    POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK -F ";" '{print $2}')
+    POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
     if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]]; then
       PrintDebug "#$COUNTER $POOL_NAME $POOL_SOCKET"
       COUNTER=$(echo "$COUNTER + 1" | $S_BC)
@@ -638,13 +645,13 @@ function PrintCacheList() {
   for POOL_ITEM in "${CACHE[@]}"; do
     local POOL_NAME
     # shellcheck disable=SC2016
-    POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK -F ";" '{print $1}')
+    POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
     local POOL_SOCKET
     # shellcheck disable=SC2016
-    POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK -F ";" '{print $2}')
+    POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
     local PROCESS_MANAGER
     # shellcheck disable=SC2016
-    PROCESS_MANAGER=$(echo "$POOL_ITEM" | $S_AWK -F ";" '{print $3}')
+    PROCESS_MANAGER=$(echo "$POOL_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $3}')
     if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]] && [[ -n "$PROCESS_MANAGER" ]]; then
       PrintDebug "#$COUNTER $POOL_NAME $POOL_SOCKET $PROCESS_MANAGER"
       COUNTER=$(echo "$COUNTER + 1" | $S_BC)
@@ -798,16 +805,16 @@ LAST_PENDING_ITEM=${PENDING_LIST[${#PENDING_LIST[@]} - 1]}
 
 for POOL_ITEM in "${PENDING_LIST[@]}"; do
   # shellcheck disable=SC2016
-  POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK -F ";" '{print $1}')
+  POOL_NAME=$(echo "$POOL_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
   # shellcheck disable=SC2016
-  POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK -F ";" '{print $2}')
+  POOL_SOCKET=$(echo "$POOL_ITEM" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
   if [[ -n "$POOL_NAME" ]] && [[ -n "$POOL_SOCKET" ]]; then
     PARALLEL_TASKS=$((PARALLEL_TASKS + 1))
     if [[ $PARALLEL_TASKS -le $MAX_PARALLEL_TASKS ]]; then
       PrintDebug "Starting processing task for pool $POOL_NAME $POOL_SOCKET, subprocess #$PARALLEL_TASKS..."
       ProcessPool "$POOL_NAME" "$POOL_SOCKET" &
       TASK_PID=$!
-      TASK_LIST+=("$POOL_NAME;$POOL_SOCKET;$TASK_PID")
+      TASK_LIST+=("$POOL_NAME$ARRAY_SEPARATOR$POOL_SOCKET$ARRAY_SEPARATOR$TASK_PID")
     fi
 
     if [[ $PARALLEL_TASKS -gt $MAX_PARALLEL_TASKS ]] || [[ $LAST_PENDING_ITEM == "$POOL_ITEM" ]]; then
@@ -819,11 +826,11 @@ for POOL_ITEM in "${PENDING_LIST[@]}"; do
       fi
       for TASK_LINE in "${TASK_LIST[@]}"; do
         # shellcheck disable=SC2016
-        POOL_NAME=$(echo "$TASK_LINE" | $S_AWK -F ";" '{print $1}')
+        POOL_NAME=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $1}')
         # shellcheck disable=SC2016
-        POOL_SOCKET=$(echo "$TASK_LINE" | $S_AWK -F ";" '{print $2}')
+        POOL_SOCKET=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $2}')
         # shellcheck disable=SC2016
-        TASK_PID=$(echo "$TASK_LINE" | $S_AWK -F ";" '{print $3}')
+        TASK_PID=$(echo "$TASK_LINE" | $S_AWK -F "$ARRAY_SEPARATOR" '{print $3}')
         wait $TASK_PID
         EXIT_CODE=$?
         PrintDebug "Finished parallel task PID $TASK_PID for pool \"$POOL_NAME\" at $POOL_SOCKET"

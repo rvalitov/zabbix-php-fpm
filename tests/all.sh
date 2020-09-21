@@ -142,6 +142,19 @@ function AddSleepToConfig() {
   sleep 2
 }
 
+function StartTimer() {
+  START_TIME=$(date +%s%N)
+}
+
+function printElapsedTime() {
+  local END_TIME
+  local ELAPSED_TIME
+
+  END_TIME=$(date +%s%N)
+  ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
+  printYellow "Elapsed time $ELAPSED_TIME ms"
+}
+
 function getPHPVersion() {
   TEST_STRING=$1
   PHP_VERSION=$(echo "$TEST_STRING" | grep -oP "(\d\.\d)")
@@ -530,6 +543,7 @@ setUp() {
   if [[ -d "$CACHE_DIRECTORY" ]]; then
     sudo find "$CACHE_DIRECTORY" -type f -exec rm '{}' \;
   fi
+  StartTimer
 }
 
 #Called after every test
@@ -566,6 +580,7 @@ testNonRootUserPrivilegesDiscovery() {
   #Run the script under non root user
   DATA=$(sudo -u zabbix "/etc/zabbix/zabbix_php_fpm_discovery.sh")
   IS_OK=$(echo "$DATA" | grep -F 'Insufficient privileges')
+  printElapsedTime
   assertNotNull "The discovery script must not work for non root user" "$IS_OK"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -575,6 +590,7 @@ testNonRootUserPrivilegesStatus() {
   assertNotNull "Test socket is not defined" "$TEST_SOCKET"
   DATA=$(sudo -u zabbix "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F 'Insufficient privileges')
+  printElapsedTime
   assertNotNull "The status script must not work for non root user" "$IS_OK"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -589,6 +605,7 @@ testStatusScriptSocket() {
   assertNotNull "Test socket is not defined" "$TEST_SOCKET"
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
+  printElapsedTime
   assertNotNull "Failed to get status from pool $TEST_SOCKET: $DATA" "$IS_OK"
   printGreen "Success test of $TEST_SOCKET"
   printSuccess "${FUNCNAME[0]}"
@@ -601,6 +618,7 @@ testStatusScriptPort() {
   #Make the test:
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
+  printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
   printGreen "Success test of $PHP_POOL"
   printSuccess "${FUNCNAME[0]}"
@@ -609,6 +627,7 @@ testStatusScriptPort() {
 testZabbixStatusSocket() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$TEST_SOCKET","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
+  printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
   printGreen "Success test of $PHP_POOL"
   printSuccess "${FUNCNAME[0]}"
@@ -620,6 +639,7 @@ testZabbixStatusPort() {
 
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
+  printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
   printGreen "Success test of $PHP_POOL"
   printSuccess "${FUNCNAME[0]}"
@@ -628,6 +648,7 @@ testZabbixStatusPort() {
 testDiscoverScriptReturnsData() {
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
+  printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -644,6 +665,7 @@ testDiscoverScriptDebug() {
     echo "$DATA"
     travis_fold_end
   fi
+  printElapsedTime
   assertEquals "Discover script errors mismatch" "$PHP_COUNT" "$NUMBER_OF_ERRORS"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -651,6 +673,7 @@ testDiscoverScriptDebug() {
 testZabbixDiscoverReturnsData() {
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
+  printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -660,6 +683,7 @@ testDiscoverScriptSleep() {
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
 
+  printElapsedTime
   printYellow "Success time checks: $CHECK_OK_COUNT"
   printYellow "Stop time checks: $STOP_OK_COUNT"
 
@@ -682,15 +706,12 @@ testZabbixDiscoverSleep() {
 }
 
 testDiscoverScriptRunDuration() {
-  START_TIME=$(date +%s%N)
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
-  END_TIME=$(date +%s%N)
-  ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
   MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
-  printYellow "Elapsed time $ELAPSED_TIME ms"
+  printElapsedTime
   printYellow "Success time checks: $CHECK_OK_COUNT"
   printYellow "Stop time checks: $STOP_OK_COUNT"
 
@@ -702,13 +723,10 @@ testZabbixDiscoverRunDuration() {
   #Add sleep
   AddSleepToConfig
 
-  START_TIME=$(date +%s%N)
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
-  END_TIME=$(date +%s%N)
-  ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
   MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
-  printYellow "Elapsed time $ELAPSED_TIME ms"
+  printElapsedTime
 
   assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
   printSuccess "${FUNCNAME[0]}"
@@ -718,6 +736,7 @@ testDiscoverScriptDoubleRun() {
   DATA_FIRST=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
   DATA_SECOND=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
 
+  printElapsedTime
   assertNotEquals "Multiple discovery routines provide the same results: $DATA_FIRST" "$DATA_FIRST" "$DATA_SECOND"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -729,6 +748,7 @@ testZabbixDiscoverDoubleRun() {
   DATA_FIRST=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   DATA_SECOND=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
 
+  printElapsedTime
   assertNotEquals "Multiple discovery routines provide the same results: $DATA_FIRST" "$DATA_FIRST" "$DATA_SECOND"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -790,6 +810,7 @@ testZabbixDiscoverNumberOfSocketPools() {
   travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
   echo "$DATA"
   travis_fold_end
+  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -799,6 +820,7 @@ testZabbixDiscoverNumberOfDynamicPools() {
   travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
   echo "$DATA"
   travis_fold_end
+  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -809,6 +831,7 @@ testZabbixDiscoverNumberOfOndemandPoolsCold() {
   travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
   echo "$DATA"
   travis_fold_end
+  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -819,6 +842,7 @@ testZabbixDiscoverNumberOfOndemandPoolsHot() {
   travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
   echo "$DATA"
   travis_fold_end
+  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -840,6 +864,7 @@ testZabbixDiscoverNumberOfOndemandPoolsCache() {
   echo "$CACHED_DATA"
   travis_fold_end
 
+  printElapsedTime
   assertEquals "Data mismatch" "$INITIAL_DATA" "$CACHED_DATA"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -851,6 +876,7 @@ testZabbixDiscoverNumberOfIPPools() {
   travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
   echo "$DATA"
   travis_fold_end
+  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -860,6 +886,7 @@ testZabbixDiscoverNumberOfPortPools() {
   travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
   echo "$DATA"
   travis_fold_end
+  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -885,6 +912,7 @@ testDiscoverScriptManyPoolsRunDuration() {
     printAction "Run #$c..."
     testDiscoverScriptRunDuration
   done
+  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -894,6 +922,7 @@ testZabbixDiscoverManyPoolsRunDuration() {
     printAction "Run #$c..."
     testZabbixDiscoverRunDuration
   done
+  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
