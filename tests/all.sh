@@ -127,14 +127,16 @@ function getUserParameters() {
 }
 
 function restoreUserParameters() {
+  local PARAMS_FILE
   PARAMS_FILE=$(getUserParameters)
   sudo rm -f "$PARAMS_FILE"
   sudo cp "$TRAVIS_BUILD_DIR/zabbix/userparameter_php_fpm.conf" "$(sudo find /etc/zabbix/ -name 'zabbix_agentd*.d' -type d 2>/dev/null | sort | head -n1)"
 }
 
 function AddSleepToConfig() {
+  local PARAMS_FILE
   PARAMS_FILE=$(getUserParameters)
-  sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep max_tasks 1 $1#' "$PARAMS_FILE"
+  sudo sed -i 's#.*zabbix_php_fpm_discovery.*#UserParameter=php-fpm.discover[*],sudo /etc/zabbix/zabbix_php_fpm_discovery.sh sleep $1#' "$PARAMS_FILE"
   travis_fold_start "AddSleepToConfig" "ⓘ New UserParameter file"
   sudo cat "$PARAMS_FILE"
   travis_fold_end
@@ -161,7 +163,8 @@ function assertExecutionTime() {
 }
 
 function getPHPVersion() {
-  TEST_STRING=$1
+  local TEST_STRING=$1
+  local PHP_VERSION
   PHP_VERSION=$(echo "$TEST_STRING" | grep -oP "(\d\.\d)")
   if [[ -z "$PHP_VERSION" ]]; then
     PHP_VERSION=$(echo "$TEST_STRING" | grep -oP "php(\d)" | grep -oP "(\d)")
@@ -179,7 +182,7 @@ function getEtcPHPDirectory() {
     return 0
   fi
 
-  LIST_OF_DIRS=(
+  local LIST_OF_DIRS=(
     "/etc/php/"
     "/etc/php5/"
   )
@@ -204,11 +207,12 @@ function getRunPHPDirectory() {
     return 0
   fi
 
-  LIST_OF_DIRS=(
+  local LIST_OF_DIRS=(
     "/run/"
     "/var/run/"
   )
   for PHP_TEST_DIR in "${LIST_OF_DIRS[@]}"; do
+    local RESULT_DIR
     RESULT_DIR=$(sudo find "$PHP_TEST_DIR" -name 'php*-fpm.sock' -type s -exec dirname {} \; 2>/dev/null | sort | head -n1)
     if [[ -d "$RESULT_DIR" ]]; then
       PHP_SOCKET_DIR="$RESULT_DIR/"
@@ -218,17 +222,21 @@ function getRunPHPDirectory() {
 
   if [[ -z "$PHP_SOCKET_DIR" ]]; then
     #Try to parse the location from default config
+    local PHP_DIR
     PHP_DIR=$(getEtcPHPDirectory)
-    EXIT_CODE=$?
+    local EXIT_CODE=$?
     assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
     assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
+    local DEFAULT_CONF
     DEFAULT_CONF=$(sudo find "$PHP_DIR" -name "www.conf" -type f | uniq | head -n1)
     assertTrue "Failed to find default www.conf file inside '$PHP_DIR'" "[ -n $DEFAULT_CONF ]"
 
+    local DEFAULT_SOCKET
     DEFAULT_SOCKET=$(sudo grep -Po 'listen = (.+)' "$DEFAULT_CONF" | cut -d '=' -f2 | sed -e 's/^[ \t]*//')
     assertTrue "Failed to extract socket information from '$DEFAULT_CONF'" "[ -n $DEFAULT_SOCKET ]"
 
+    local RESULT_DIR
     RESULT_DIR=$(dirname "$DEFAULT_SOCKET")
     assertTrue "Directory '$RESULT_DIR' does not exist" "[ -d $RESULT_DIR ]"
     if [[ -d "$RESULT_DIR" ]]; then
@@ -245,15 +253,17 @@ function getRunPHPDirectory() {
 }
 
 copyPool() {
-  ORIGINAL_FILE=$1
-  POOL_NAME=$2
-  POOL_SOCKET=$3
-  POOL_TYPE=$4
+  local ORIGINAL_FILE=$1
+  local POOL_NAME=$2
+  local POOL_SOCKET=$3
+  local POOL_TYPE=$4
+  local POOL_DIR
+  local PHP_VERSION
   POOL_DIR=$(dirname "${ORIGINAL_FILE}")
   PHP_VERSION=$(getPHPVersion "$POOL_DIR")
   assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
 
-  NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
+  local NEW_POOL_FILE="$POOL_DIR/${POOL_NAME}.conf"
   sudo cp "$ORIGINAL_FILE" "$NEW_POOL_FILE"
 
   #Add status path
@@ -271,17 +281,18 @@ copyPool() {
 }
 
 getPHPServiceName() {
-  PHP_VERSION=$1
+  local PHP_VERSION=$1
   if [[ -z "$LIST_OF_SERVICES" ]]; then
     LIST_OF_SERVICES=$(sudo service --status-all 2>/dev/null | sort)
   fi
 
-  LIST_OF_NAMES=(
+  local LIST_OF_NAMES=(
     "php${PHP_VERSION}-fpm"
     "php-fpm"
   )
 
   for SERVICE_NAME in "${LIST_OF_NAMES[@]}"; do
+    local RESULT
     RESULT=$(echo "$LIST_OF_SERVICES" | grep -F "$SERVICE_NAME")
     if [[ -n "$RESULT" ]]; then
       echo "$SERVICE_NAME"
@@ -292,16 +303,26 @@ getPHPServiceName() {
 }
 
 setupPool() {
-  POOL_FILE=$1
+  local POOL_FILE=$1
+  local POOL_DIR
+  local PHP_VERSION
+  local POOL_NAME
+  local POOL_SOCKET
+  local PHP_SERIAL_ID
+  local START_PORT
+  local PORT_IS_BUSY
+
   POOL_DIR=$(dirname "${POOL_FILE}")
   PHP_VERSION=$(getPHPVersion "$POOL_DIR")
   assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
 
+  local PHP_RUN_DIR
   PHP_RUN_DIR=$(getRunPHPDirectory)
-  EXIT_CODE=$?
+  local EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
   assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
+  local PHP_DIR
   PHP_DIR=$(getEtcPHPDirectory)
   EXIT_CODE=$?
   assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
@@ -356,6 +377,7 @@ setupPool() {
   sudo ls -l "$POOL_DIR"
   travis_fold_end
 
+  local SERVICE_NAME
   SERVICE_NAME=$(getPHPServiceName "$PHP_VERSION")
   assertNotNull "Failed to detect service name for PHP${PHP_VERSION}" "$SERVICE_NAME"
   printAction "Restarting service $SERVICE_NAME..."
@@ -363,6 +385,7 @@ setupPool() {
   sleep 3
 
   travis_fold_start "running_PHP$PHP_VERSION" "ⓘ List of running PHP$PHP_VERSION pools"
+  local E_SYSTEM_CONTROL
   E_SYSTEM_CONTROL=$(type -P systemctl)
   if [[ -x "$E_SYSTEM_CONTROL" ]]; then
     sudo systemctl -l status "$SERVICE_NAME.service"
@@ -374,14 +397,17 @@ setupPool() {
 }
 
 setupPools() {
+  local PHP_DIR
   PHP_DIR=$(getEtcPHPDirectory)
-  EXIT_CODE=$?
+  local EXIT_CODE=$?
   assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
   assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
+  local PHP_LIST
   PHP_LIST=$(sudo find "$PHP_DIR" -name 'www.conf' -type f)
 
   #Call to detect and cache PHP run directory, we need to call it before we stop all PHP-FPM
+  local PHP_RUN_DIR
   PHP_RUN_DIR=$(getRunPHPDirectory)
   EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
@@ -390,6 +416,10 @@ setupPools() {
   #First we need to stop all PHP-FPM
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
+      local POOL_DIR
+      local PHP_VERSION
+      local SERVICE_NAME
+
       POOL_DIR=$(dirname "$pool")
       PHP_VERSION=$(getPHPVersion "$POOL_DIR")
       assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
@@ -409,29 +439,36 @@ setupPools() {
 }
 
 getNumberOfPHPVersions() {
+  local PHP_DIR
   PHP_DIR=$(getEtcPHPDirectory)
-  EXIT_CODE=$?
+  local EXIT_CODE=$?
   assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
   assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
+  local PHP_COUNT
   PHP_COUNT=$(sudo find "$PHP_DIR" -name 'www.conf' -type f | wc -l)
   echo "$PHP_COUNT"
 }
 
 function startOndemandPoolsCache() {
+  local PHP_DIR
   PHP_DIR=$(getEtcPHPDirectory)
-  EXIT_CODE=$?
+  local EXIT_CODE=$?
   assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
   assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
+  local PHP_RUN_DIR
   PHP_RUN_DIR=$(getRunPHPDirectory)
   EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
   assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
   # We must start all the pools
-  POOL_URL="/php-fpm-status"
+  local POOL_URL="/php-fpm-status"
 
+  local PHP_LIST
+  local POOL_DIR
+  local PHP_VERSION
   PHP_LIST=$(sudo find "$PHP_DIR" -name 'www.conf' -type f)
   while IFS= read -r pool; do
     if [[ -n $pool ]]; then
@@ -440,8 +477,8 @@ function startOndemandPoolsCache() {
       assertNotNull "Failed to detect PHP version from string '$POOL_DIR'" "$PHP_VERSION"
 
       for ((c = 1; c <= MAX_POOLS; c++)); do
-        POOL_NAME="ondemand$c"
-        POOL_SOCKET="${PHP_RUN_DIR}php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
+        local POOL_NAME="ondemand$c"
+        local POOL_SOCKET="${PHP_RUN_DIR}php${PHP_VERSION}-fpm-${POOL_NAME}.sock"
 
         PHP_STATUS=$(
           SCRIPT_NAME=$POOL_URL \
@@ -457,27 +494,33 @@ function startOndemandPoolsCache() {
 }
 
 getAnySocket() {
+  local PHP_DIR
   PHP_DIR=$(getEtcPHPDirectory)
-  EXIT_CODE=$?
+  local EXIT_CODE=$?
   assertEquals "Failed to find PHP configuration directory" "0" "$EXIT_CODE"
   assertTrue "PHP configuration directory '$PHP_DIR' is not a directory" "[ -d $PHP_DIR ]"
 
+local PHP_RUN_DIR
   PHP_RUN_DIR=$(getRunPHPDirectory)
   EXIT_CODE=$?
   assertEquals "Failed to find PHP run directory" "0" "$EXIT_CODE"
   assertTrue "PHP run directory '$PHP_RUN_DIR' is not a directory" "[ -d $PHP_RUN_DIR ]"
 
   #Get any socket of PHP-FPM:
+  local PHP_FIRST
   PHP_FIRST=$(sudo find "$PHP_DIR" -name 'www.conf' -type f | sort | head -n1)
   assertNotNull "Failed to get PHP conf" "$PHP_FIRST"
+  local PHP_VERSION
   PHP_VERSION=$(getPHPVersion "$PHP_FIRST")
   assertNotNull "Failed to detect PHP version from string '$PHP_FIRST'" "$PHP_VERSION"
+  local PHP_POOL
   PHP_POOL=$(sudo find "$PHP_RUN_DIR" -name "php${PHP_VERSION}*.sock" -type s 2>/dev/null | sort | head -n1)
   assertNotNull "Failed to get PHP${PHP_VERSION} socket" "$PHP_POOL"
   echo "$PHP_POOL"
 }
 
 getAnyPort() {
+  local PHP_PORT
   PHP_PORT=$(sudo netstat -tulpn | grep -F "LISTEN" | grep -F "php-fpm" | head -n1 | awk '{print $4}' | rev | cut -d: -f1 | rev)
   assertNotNull "Failed to get PHP port" "$PHP_PORT"
   echo "$PHP_PORT"
@@ -560,12 +603,16 @@ tearDown() {
 }
 
 testZabbixGetInstalled() {
+  local ZABBIX_GET
   ZABBIX_GET=$(type -P zabbix_get)
   assertNotNull "Utility zabbix-get not installed" "$ZABBIX_GET"
   printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixAgentVersion() {
+  local REQUESTED_VERSION
+  local INSTALLED_VERSION
+
   #Example: 4.4
   REQUESTED_VERSION=$(echo "$TRAVIS_JOB_NAME" | grep -i -F "zabbix" | head -n1 | cut -d "@" -f1 | cut -d " " -f2)
   INSTALLED_VERSION=$(zabbix_agentd -V | grep -F "zabbix" | head -n1 | rev | cut -d " " -f1 | rev | cut -d "." -f1,2)
@@ -574,6 +621,9 @@ testZabbixAgentVersion() {
 }
 
 testZabbixGetVersion() {
+  local REQUESTED_VERSION
+  local INSTALLED_VERSION
+
   #Example: 4.4
   REQUESTED_VERSION=$(echo "$TRAVIS_JOB_NAME" | grep -i -F "zabbix" | head -n1 | cut -d "@" -f1 | cut -d " " -f2)
   INSTALLED_VERSION=$(zabbix_get -V | grep -F "zabbix" | head -n1 | rev | cut -d " " -f1 | rev | cut -d "." -f1,2)
@@ -582,6 +632,9 @@ testZabbixGetVersion() {
 }
 
 testNonRootUserPrivilegesDiscovery() {
+  local DATA
+  local IS_OK
+
   #Run the script under non root user
   DATA=$(sudo -u zabbix "/etc/zabbix/zabbix_php_fpm_discovery.sh")
   IS_OK=$(echo "$DATA" | grep -F 'Insufficient privileges')
@@ -591,6 +644,9 @@ testNonRootUserPrivilegesDiscovery() {
 }
 
 testNonRootUserPrivilegesStatus() {
+  local DATA
+  local IS_OK
+
   #Run the script under non root user
   assertNotNull "Test socket is not defined" "$TEST_SOCKET"
   DATA=$(sudo -u zabbix "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
@@ -601,12 +657,17 @@ testNonRootUserPrivilegesStatus() {
 }
 
 testPHPIsRunning() {
+  local IS_OK
+
   IS_OK=$(sudo ps ax | grep -F "php-fpm: pool " | grep -F -v "grep" | head -n1)
   assertNotNull "No running PHP-FPM instances found" "$IS_OK"
   printSuccess "${FUNCNAME[0]}"
 }
 
 testStatusScriptSocket() {
+  local DATA
+  local IS_OK
+
   assertNotNull "Test socket is not defined" "$TEST_SOCKET"
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$TEST_SOCKET" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
@@ -618,8 +679,12 @@ testStatusScriptSocket() {
 }
 
 testStatusScriptPort() {
+  local DATA
+  local IS_OK
+  local PHP_PORT
+
   PHP_PORT=$(getAnyPort)
-  PHP_POOL="127.0.0.1:$PHP_PORT"
+  local PHP_POOL="127.0.0.1:$PHP_PORT"
 
   #Make the test:
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_status.sh" "$PHP_POOL" "/php-fpm-status")
@@ -632,6 +697,9 @@ testStatusScriptPort() {
 }
 
 testZabbixStatusSocket() {
+  local DATA
+  local IS_OK
+
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$TEST_SOCKET","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
@@ -642,8 +710,12 @@ testZabbixStatusSocket() {
 }
 
 testZabbixStatusPort() {
+  local DATA
+  local IS_OK
+  local PHP_PORT
+
   PHP_PORT=$(getAnyPort)
-  PHP_POOL="127.0.0.1:$PHP_PORT"
+  local PHP_POOL="127.0.0.1:$PHP_PORT"
 
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.status["$PHP_POOL","/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
@@ -655,6 +727,9 @@ testZabbixStatusPort() {
 }
 
 testDiscoverScriptReturnsData() {
+  local DATA
+  local IS_OK
+
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "/php-fpm-status")
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   printElapsedTime
@@ -670,6 +745,7 @@ testDiscoverScriptDebug() {
   NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
 
   if [[ $NUMBER_OF_ERRORS -gt 0 ]]; then
+    local ERRORS_LIST
     ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
     printYellow "Errors list:"
     printYellow "$ERRORS_LIST"
@@ -684,10 +760,14 @@ testDiscoverScriptDebug() {
 }
 
 testDiscoverScriptTimeout() {
+  local DATA
+  local NUMBER_OF_ERRORS
+  local PHP_COUNT
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "nosleep" "max_tasks" "1" "/php-fpm-status")
   NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
   if [[ $PHP_COUNT != "$NUMBER_OF_ERRORS" ]]; then
+    local ERRORS_LIST
     ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
     printYellow "Errors list:"
     printYellow "$ERRORS_LIST"
@@ -700,16 +780,26 @@ testDiscoverScriptTimeout() {
   printSuccess "${FUNCNAME[0]}"
 }
 
-testZabbixDiscoverReturnsData() {
+function runZabbixDiscoverReturnsData() {
+  local DATA
+  local IS_OK
   DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
   assertExecutionTime
+}
+
+testZabbixDiscoverReturnsData() {
+  runZabbixDiscoverReturnsData
   printSuccess "${FUNCNAME[0]}"
 }
 
 testDiscoverScriptSleep() {
+  local DATA
+  local CHECK_OK_COUNT
+  local STOP_OK_COUNT
+
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
@@ -739,6 +829,10 @@ testZabbixDiscoverSleep() {
 }
 
 testDiscoverScriptRunDuration() {
+  local DATA
+  local CHECK_OK_COUNT
+  local STOP_OK_COUNT
+
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
   CHECK_OK_COUNT=$(echo "$DATA" | grep -o -F "execution time OK" | wc -l)
   STOP_OK_COUNT=$(echo "$DATA" | grep -o -F "stop required" | wc -l)
@@ -751,7 +845,19 @@ testDiscoverScriptRunDuration() {
   printSuccess "${FUNCNAME[0]}"
 }
 
+testZabbixDiscoverRunDuration() {
+  #Add sleep
+  AddSleepToConfig
+
+  StartTimer
+  runZabbixDiscoverReturnsData
+  printSuccess "${FUNCNAME[0]}"
+}
+
 testDiscoverScriptDoubleRun() {
+  local DATA_FIRST
+  local DATA_SECOND
+
   DATA_FIRST=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
   DATA_SECOND=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "sleep" "/php-fpm-status")
 
@@ -761,6 +867,9 @@ testDiscoverScriptDoubleRun() {
 }
 
 testZabbixDiscoverDoubleRun() {
+  local DATA_FIRST
+  local DATA_SECOND
+
   #Add sleep
   AddSleepToConfig
 
@@ -773,8 +882,9 @@ testZabbixDiscoverDoubleRun() {
 }
 
 function discoverAllZabbix() {
-  DATA_OLD=$1
-  DATA_COUNT=$2
+  local DATA_OLD=$1
+  local DATA_COUNT=$2
+  local DATA
 
   if [[ -z $DATA_COUNT ]]; then
     DATA_COUNT=0
@@ -785,6 +895,7 @@ function discoverAllZabbix() {
     echo "$DATA"
     return 0
   else
+    local DATA_COUNT
     DATA_COUNT=$(echo "$DATA_COUNT + 1" | bc)
     if [[ $DATA_COUNT -gt $MAX_CHECKS ]]; then
       printYellow "Data old:"
@@ -800,17 +911,21 @@ function discoverAllZabbix() {
 }
 
 checkNumberOfPools() {
-  POOL_TYPE=$1
-  CHECK_COUNT=$2
+  local POOL_TYPE=$1
+  local CHECK_COUNT=$2
+  local DATA
 
   DATA=$(discoverAllZabbix)
-  STATUS=$?
+  local STATUS=$?
   if [[ $STATUS -ne 0 ]]; then
     echo "$DATA"
     return 1
   fi
   assertEquals "Failed to discover all data when checking pools '$POOL_TYPE'" "0" "$STATUS"
 
+local NUMBER_OF_POOLS
+local PHP_COUNT
+local POOLS_BY_DESIGN
   NUMBER_OF_POOLS=$(echo "$DATA" | grep -o -F "{\"{#POOLNAME}\":\"$POOL_TYPE" | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
   if [[ -n "$CHECK_COUNT" ]] && [[ "$CHECK_COUNT" -ge 0 ]]; then
@@ -869,15 +984,18 @@ testZabbixDiscoverNumberOfOndemandPoolsCache() {
   startOndemandPoolsCache
 
   printAction "Empty cache test..."
+  local INITIAL_DATA
   INITIAL_DATA=$(checkNumberOfPools "ondemand")
   travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
   echo "$INITIAL_DATA"
   travis_fold_end
 
+local WAIT_TIMEOUT
   WAIT_TIMEOUT=$(echo "$ONDEMAND_TIMEOUT * 2" | bc)
   sleep "$WAIT_TIMEOUT"
 
   printAction "Full cache test..."
+  local CACHED_DATA
   CACHED_DATA=$(checkNumberOfPools "ondemand")
   travis_fold_start "${FUNCNAME[0]}" "ⓘ Zabbix response"
   echo "$CACHED_DATA"
@@ -889,6 +1007,7 @@ testZabbixDiscoverNumberOfOndemandPoolsCache() {
 }
 
 testZabbixDiscoverNumberOfIPPools() {
+  local PHP_COUNT
   PHP_COUNT=$(getNumberOfPHPVersions)
   local DATA
   DATA=$(checkNumberOfPools "localhost" "$PHP_COUNT")
@@ -926,7 +1045,7 @@ testZabbixDiscoverManyPools() {
 }
 
 testDiscoverScriptManyPoolsRunDuration() {
-  MAX_RUNS=5
+  local MAX_RUNS=5
   for ((c = 1; c <= MAX_RUNS; c++)); do
     StartTimer
     printAction "Run #$c..."
@@ -936,7 +1055,7 @@ testDiscoverScriptManyPoolsRunDuration() {
 }
 
 testZabbixDiscoverManyPoolsRunDuration() {
-  MAX_RUNS=5
+  local MAX_RUNS=5
   for ((c = 1; c <= MAX_RUNS; c++)); do
     StartTimer
     printAction "Run #$c..."
