@@ -148,11 +148,15 @@ function StartTimer() {
 
 function printElapsedTime() {
   local END_TIME
-  local ELAPSED_TIME
+  ELAPSED_TIME
 
   END_TIME=$(date +%s%N)
   ELAPSED_TIME=$(echo "($END_TIME - $START_TIME)/1000000" | bc)
   printYellow "Elapsed time $ELAPSED_TIME ms"
+}
+
+function assertExecutionTime() {
+  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
 }
 
 function getPHPVersion() {
@@ -607,6 +611,7 @@ testStatusScriptSocket() {
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
   assertNotNull "Failed to get status from pool $TEST_SOCKET: $DATA" "$IS_OK"
+  assertExecutionTime
   printGreen "Success test of $TEST_SOCKET"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -620,6 +625,7 @@ testStatusScriptPort() {
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+  assertExecutionTime
   printGreen "Success test of $PHP_POOL"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -629,6 +635,7 @@ testZabbixStatusSocket() {
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+  assertExecutionTime
   printGreen "Success test of $PHP_POOL"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -641,6 +648,7 @@ testZabbixStatusPort() {
   IS_OK=$(echo "$DATA" | grep -F '{"pool":"')
   printElapsedTime
   assertNotNull "Failed to get status from pool $PHP_POOL: $DATA" "$IS_OK"
+  assertExecutionTime
   printGreen "Success test of $PHP_POOL"
   printSuccess "${FUNCNAME[0]}"
 }
@@ -650,18 +658,39 @@ testDiscoverScriptReturnsData() {
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
+  assertExecutionTime
   printSuccess "${FUNCNAME[0]}"
 }
 
 testDiscoverScriptDebug() {
+  local DATA
+  local NUMBER_OF_ERRORS
   DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "nosleep" "/php-fpm-status")
+  NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
+
+  if [[ $NUMBER_OF_ERRORS -gt 0 ]]; then
+    ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
+    printYellow "Errors list:"
+    printYellow "$ERRORS_LIST"
+    travis_fold_start "testDiscoverScriptDebug_full" "ⓘ Full output"
+    echo "$DATA"
+    travis_fold_end
+  fi
+  printElapsedTime
+  assertEquals "Discover script errors mismatch" "0" "$NUMBER_OF_ERRORS"
+  assertExecutionTime
+  printSuccess "${FUNCNAME[0]}"
+}
+
+testDiscoverScriptTimeout() {
+  DATA=$(sudo -u zabbix sudo "/etc/zabbix/zabbix_php_fpm_discovery.sh" "debug" "nosleep" "max_tasks" "1" "/php-fpm-status")
   NUMBER_OF_ERRORS=$(echo "$DATA" | grep -o -F 'Error:' | wc -l)
   PHP_COUNT=$(getNumberOfPHPVersions)
   if [[ $PHP_COUNT != "$NUMBER_OF_ERRORS" ]]; then
     ERRORS_LIST=$(echo "$DATA" | grep -F 'Error:')
     printYellow "Errors list:"
     printYellow "$ERRORS_LIST"
-    travis_fold_start "testDiscoverScriptDebug_full" "ⓘ Full output"
+    travis_fold_start "testDiscoverScriptTimeout_full" "ⓘ Full output"
     echo "$DATA"
     travis_fold_end
   fi
@@ -675,6 +704,7 @@ testZabbixDiscoverReturnsData() {
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
+  assertExecutionTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -694,6 +724,7 @@ testDiscoverScriptSleep() {
   fi
   assertTrue "No success time checks detected" "[ $CHECK_OK_COUNT -gt 0 ] || [ $STOP_OK_COUNT -eq 1 ]"
   assertTrue "No success stop checks detected" "[ $STOP_OK_COUNT -gt 0 ]"
+  assertExecutionTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -715,7 +746,7 @@ testDiscoverScriptRunDuration() {
   printYellow "Success time checks: $CHECK_OK_COUNT"
   printYellow "Stop time checks: $STOP_OK_COUNT"
 
-  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
+  assertExecutionTime
   printSuccess "${FUNCNAME[0]}"
 }
 
@@ -727,8 +758,7 @@ testZabbixDiscoverRunDuration() {
   MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
 
   printElapsedTime
-
-  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
+  assertExecutionTime
   printSuccess "${FUNCNAME[0]}"
 }
 

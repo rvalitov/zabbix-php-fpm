@@ -691,10 +691,13 @@ while [ $ARG_ID -le $ARGS_COUNT ]; do
   ARG=$1
   if [[ $ARG == "debug" ]]; then
     DEBUG_MODE="1"
-    echo "Debug mode enabled"
+    PrintDebug "Debug mode enabled"
+    if [[ $ARG_ID -ne 1 ]]; then
+      PrintDebug "Error: argument 'debug' if used must be the first argument"
+    fi
   elif [[ $ARG == "sleep" ]]; then
     USE_SLEEP_TIMEOUT="1"
-    echo "Debug: Sleep timeout enabled"
+    PrintDebug "Debug: Sleep timeout enabled"
   elif [[ $ARG == "max_tasks" ]]; then
     ARG_ID=$((ARG_ID + 1))
     shift 1
@@ -702,7 +705,7 @@ while [ $ARG_ID -le $ARGS_COUNT ]; do
     if [[ $ARG -ge 1 ]]; then
       MAX_PARALLEL_TASKS=$1
     fi
-    echo "Debug: argument 'max_tasks' = '$ARG' detected, the resulting parameter is set to $MAX_PARALLEL_TASKS"
+    PrintDebug "Debug: argument 'max_tasks' = '$ARG' detected, the resulting parameter is set to $MAX_PARALLEL_TASKS"
   elif [[ $ARG == "max_time" ]]; then
     ARG_ID=$((ARG_ID + 1))
     shift 1
@@ -710,16 +713,16 @@ while [ $ARG_ID -le $ARGS_COUNT ]; do
     if [[ $ARG -ge 1 ]]; then
       MAX_EXECUTION_TIME=$1
     fi
-    echo "Debug: argument 'max_time' = '$ARG' detected, the resulting parameter is set to $MAX_EXECUTION_TIME"
+    PrintDebug "Debug: argument 'max_time' = '$ARG' detected, the resulting parameter is set to $MAX_EXECUTION_TIME"
   elif [[ $ARG == "nosleep" ]]; then
     MAX_EXECUTION_TIME="10000000"
-    echo "Debug: Timeout checks disabled"
+    PrintDebug "Debug: Timeout checks disabled"
   elif [[ $ARG == "?" ]] || [[ $ARG == "help" ]] || [[ $ARG == "/?" ]]; then
     $S_CAT <<EOF
 NAME: discovery script for zabbix-php-fpm
-USAGE: $0 [ARGUMENTS...]
+USAGE: $0 [debug] [ARGUMENTS...]
 ARGUMENTS:
-  debug - to display verbose output on screen
+  debug - to display verbose output on screen, if you use this argument, then put it first
   nosleep - to disable timeout checks, used for testing only
   sleep - to enable forced timeouts between operations, used for testing only
   max_tasks <VALUE> - sets maximum number of allowed parallel tasks to VALUE (must be >=1)
