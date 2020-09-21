@@ -157,7 +157,7 @@ function printElapsedTime() {
 function assertExecutionTime() {
   local MAX_TIME
   MAX_TIME=$(echo "$ZABBIX_TIMEOUT * 1000" | bc)
-  assertTrue "The script worked for too long" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
+  assertTrue "The script worked for too long: $ELAPSED_TIME ms, allowed $MAX_TIME ms" "[ $ELAPSED_TIME -lt $MAX_TIME ]"
 }
 
 function getPHPVersion() {
@@ -938,20 +938,20 @@ testZabbixDiscoverManyPools() {
 testDiscoverScriptManyPoolsRunDuration() {
   MAX_RUNS=5
   for ((c = 1; c <= MAX_RUNS; c++)); do
+    StartTimer
     printAction "Run #$c..."
     testDiscoverScriptRunDuration
   done
-  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
 testZabbixDiscoverManyPoolsRunDuration() {
   MAX_RUNS=5
   for ((c = 1; c <= MAX_RUNS; c++)); do
+    StartTimer
     printAction "Run #$c..."
     testZabbixDiscoverRunDuration
   done
-  printElapsedTime
   printSuccess "${FUNCNAME[0]}"
 }
 
