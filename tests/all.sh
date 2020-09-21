@@ -774,16 +774,15 @@ testDiscoverScriptTimeout() {
 function runZabbixDiscoverReturnsData() {
   local DATA
   local IS_OK
-  local OPTIONS='"/php-fpm-status"'
+  local ARG=$1
 
-  local ARG_ID=1
-  local ARGS_COUNT=$#
+  if [[ -n $ARG ]]; then
+    # shellcheck disable=SC2140
+    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["$ARG","/php-fpm-status"])
+  else
+    DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["/php-fpm-status"])
+  fi
 
-  while [ $ARG_ID -le $ARGS_COUNT ]; do
-    OPTIONS="$OPTIONS,\"$1\""
-  done
-
-  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["$OPTIONS"])
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
