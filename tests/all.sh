@@ -783,7 +783,7 @@ function runZabbixDiscoverReturnsData() {
     OPTIONS="$OPTIONS,\"$1\""
   done
 
-  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover[$OPTIONS])
+  DATA=$(zabbix_get -s 127.0.0.1 -p 10050 -k php-fpm.discover["$OPTIONS"])
   IS_OK=$(echo "$DATA" | grep -F '{"data":[{"{#POOLNAME}"')
   printElapsedTime
   assertNotNull "Discover script failed: $DATA" "$IS_OK"
